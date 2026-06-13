@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
-import '../../data/local/dao/invoice_dao.dart';
-import '../../data/local/dao/invoice_line_dao.dart';
-import '../../data/local/database/app_database.dart';
+import '../local/dao/invoice_dao.dart';
+import '../local/dao/invoice_line_dao.dart';
+import '../local/database/app_database.dart';
 
 /// Serializes all saved invoices and their lines from Drift into a structured
 /// JSON backup file written to the device's temp directory.

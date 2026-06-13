@@ -44,12 +44,12 @@ lib/
 │   ├── local/       # drift database, DAOs (InvoiceDao, InvoiceLineDao), table defs
 │   ├── remote/
 │   │   └── google_drive/   # GoogleDriveService, DriveBackupFile
-│   └── repositories/       # InvoiceRepositoryImpl, invoice_mappers.dart
+│   ├── repositories/       # InvoiceRepositoryImpl, invoice_mappers.dart
+│   └── services/           # ExportService, ImportService (Drift persistence orchestration)
 ├── domain/
 │   ├── entities/    # Invoice, InvoiceLine, InvoiceLinePreview (pure Dart, freezed)
 │   ├── repositories/# IInvoiceRepository (abstract interface)
-│   └── services/    # GoldBarCalculatorService, PrintService, ExportService,
-│                    # ImportService, BackupService
+│   └── services/    # GoldBarCalculatorService, PrintService, BackupService
 ├── features/
 │   ├── invoice/     # viewmodels / views / widgets
 │   └── backup/      # BackupViewModel, BackupScreen
@@ -153,8 +153,8 @@ Three-layer backup flow:
 BackupViewModel → BackupService → ExportService / ImportService / GoogleDriveService
 ```
 
-- **ExportService** (`domain/services/`): queries all saved invoices + lines from Drift, serializes to JSON, writes temp file `gold_invoices_backup_YYYY-MM-DD_HHmmss.json`
-- **ImportService** (`domain/services/`): reads JSON, validates `schemaVersion`, runs a single Drift transaction (DELETE saved → INSERT from backup; drafts untouched)
+- **ExportService** (`data/services/`): queries all saved invoices + lines from Drift, serializes to JSON, writes temp file `gold_invoices_backup_YYYY-MM-DD_HHmmss.json`
+- **ImportService** (`data/services/`): reads JSON, validates `schemaVersion`, runs a single Drift transaction (DELETE saved → INSERT from backup; drafts untouched)
 - **GoogleDriveService** (`data/remote/google_drive/`): `google_sign_in` v7 + `googleapis`; scope `drive.file` (app-created files only); folder `GoldInvoicesApp/backups/`. `DriveBackupFile` is a typed value object for listing results.
 - **BackupService** (`domain/services/`): orchestrates the above; owns `autoBackupIfConnected()` (fire-and-forget, never throws to caller). Checks `isAuthorizedSilently()` before upload to avoid background sign-in dialogs.
 

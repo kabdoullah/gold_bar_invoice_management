@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 
 import '../../core/errors/backup_exceptions.dart';
-import '../../data/local/database/app_database.dart';
+import '../local/database/app_database.dart';
 
 /// Reads a JSON backup file and restores its contents into the local Drift DB,
 /// replacing all existing saved invoices.

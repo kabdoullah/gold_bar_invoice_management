@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../data/remote/google_drive/google_drive_service.dart';
 import '../../../domain/services/backup_service.dart';
-import '../../../domain/services/import_service.dart';
+import '../../../data/services/import_service.dart';
 
 enum BackupStatus { idle, exporting, uploading, downloading, importing, success, error }
 

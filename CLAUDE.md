@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Flutter mobile app for managing gold bar sale invoices. Single operator, single-user, **offline-first**. Replaces a desktop application the client is used to — the UI must be dense, tabular, and faithful to the original (dark theme, FR number formatting).
 
-**Current state:** Google Drive backup fully implemented and tested on physical device. All 13 steps done. `schemaVersion = 2`.
+**Current state:** Google Drive backup fully implemented and tested on physical device. `schemaVersion = 2`. New UX phase (single-screen entry + history drawer) is the next step — see [New UX Phase](#new-ux-phase).
 
 ## Commands
 
@@ -24,7 +24,7 @@ dart run build_runner build --delete-conflicting-outputs   # regenerate Drift + 
 
 - State management: `provider` (ChangeNotifier + ChangeNotifierProvider)
 - Local DB: `drift` (SQLite) — **single source of truth**; `schemaVersion = 2`
-- Cloud backup: Google Drive via `google_sign_in` + `googleapis` *(partially wired — see Development Order)*
+- Cloud backup: Google Drive via `google_sign_in` v7 + `googleapis`; scope `drive.file`
 - PDF/print: `pdf` + `printing` packages
 - Routing: GoRouter; DI via Provider tree in `app/di.dart`
 - FR number formatting: `intl`
@@ -32,8 +32,6 @@ dart run build_runner build --delete-conflicting-outputs   # regenerate Drift + 
 - `shared_preferences` — stores `last_backup_at` timestamp
 
 ## Architecture — Strict MVVM, feature-first
-
-Reference: https://docs.flutter.dev/app-architecture/case-study/data-layer
 
 ```
 lib/
@@ -54,7 +52,7 @@ lib/
 │                    # ImportService, BackupService
 ├── features/
 │   ├── invoice/     # viewmodels / views / widgets
-│   └── backup/      # BackupViewModel, BackupScreen (NOT YET — Steps 6+)
+│   └── backup/      # BackupViewModel, BackupScreen
 └── app/             # app.dart, router.dart, di.dart
 ```
 
@@ -66,21 +64,34 @@ Layering rules (non-negotiable):
 5. Every formula in `GoldBarCalculatorService` gets a doc-comment with the math written out
 6. Batch calculations over 50 lines go through `compute()` / Isolate
 
-## UX Navigation
+### Provider scoping
+
+`di.dart` provides globally (available to entire app):
+- `AppDatabase`, `GoldBarCalculatorService`, `PrintService`
+- `IInvoiceRepository` (impl: `InvoiceRepositoryImpl`)
+- `ExportService`, `ImportService`, `GoogleDriveService`, `BackupService`
+- `BackupViewModel` (global — `..init()` called at creation)
+
+Created locally via `ChangeNotifierProvider` inside each screen:
+- `InvoiceListViewModel` — created in `InvoiceListScreen.build()`
+- `InvoiceFormViewModel` — created in `InvoiceFormScreen.build()`
+- `InvoiceDetailViewModel` — created in `InvoiceDetailScreen.build()`, takes `invoiceId`
+
+## UX Navigation (current)
 
 ```
 / (InvoiceListScreen)
   ├── [FAB] → /invoices/new (InvoiceFormScreen)
   │             sets location, issueDate, basePrice → creates draft → pushReplacement
   │             ↓
-  │           /invoices/:id (InvoiceDetailScreen)  ← add bars, Save & Print
+  │           /invoices/:id (InvoiceDetailScreen)  ← add bars via bottom sheet, Save & Print
   └── [DraftBanner resume] → /invoices/:id (same draft)
   └── [list tile tap] → /invoices/:id (read-only saved invoice)
+  └── [AppBar icon] → /backup (BackupScreen)
 ```
 
-- `InvoiceListScreen` is the home screen — shows saved invoices + DraftBanner when a draft exists
-- `InvoiceFormScreen` creates the draft (location, date, basePrice); navigates to detail via `pushReplacement`
-- `InvoiceDetailScreen` handles both draft editing (add/delete lines, Save & Print) and read-only display of saved invoices; reads `invoice.isDraft` to toggle edit controls
+- `InvoiceDetailScreen`: "Ajouter Barre" FAB opens `showInvoiceLineFormSheet()` (modal bottom sheet with real-time preview); reads `invoice.isDraft` to toggle FAB and delete-line actions
+- `InvoiceFormScreen` navigates to detail via `pushReplacement` so "back" returns to list
 
 ## Business Domain — Calculation Formulas (CRITICAL)
 
@@ -126,7 +137,7 @@ All calculations use `double` — never `int` for monetary values. Display round
 
 - `InvoiceFormScreen` → `_repo.createDraft()` → INSERT with `status = 'draft'` (survives app kill)
 - Each line added → INSERT line + UPDATE invoice totals (barCount, totalGrossWeight, totalWaterWeight, totalAmount) atomically in one transaction
-- "Save & Print" → `finalizeInvoice()` → status → `saved`, generate PDF, open `Printing.layoutPdf()` native sheet; fire-and-forget auto-backup runs after (Step 8 — not wired yet)
+- "Save & Print" → `finalizeInvoice()` → status → `saved`, generate PDF, open `Printing.layoutPdf()` native sheet; then `_backupService?.autoBackupIfConnected()` fire-and-forget
 - App reopen: `watchDraft()` → show `DraftBanner` (Resume / Discard). Discard cascade-deletes lines via FK.
 - Only one draft at a time — `createDraft()` throws `InvoiceStateException` if one exists
 
@@ -144,7 +155,7 @@ BackupViewModel → BackupService → ExportService / ImportService / GoogleDriv
 
 - **ExportService** (`domain/services/`): queries all saved invoices + lines from Drift, serializes to JSON, writes temp file `gold_invoices_backup_YYYY-MM-DD_HHmmss.json`
 - **ImportService** (`domain/services/`): reads JSON, validates `schemaVersion`, runs a single Drift transaction (DELETE saved → INSERT from backup; drafts untouched)
-- **GoogleDriveService** (`data/remote/google_drive/`): `google_sign_in` v7 + `googleapis`; scope `drive.file` (app-created files only); folder `GoldInvoicesApp/backups/`
+- **GoogleDriveService** (`data/remote/google_drive/`): `google_sign_in` v7 + `googleapis`; scope `drive.file` (app-created files only); folder `GoldInvoicesApp/backups/`. `DriveBackupFile` is a typed value object for listing results.
 - **BackupService** (`domain/services/`): orchestrates the above; owns `autoBackupIfConnected()` (fire-and-forget, never throws to caller). Checks `isAuthorizedSilently()` before upload to avoid background sign-in dialogs.
 
 ### Auto-backup triggers (all wired)
@@ -159,7 +170,7 @@ BackupViewModel → BackupService → ExportService / ImportService / GoogleDriv
 {
   "exportedAt": "ISO8601",
   "appVersion": "1.0.0",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "invoices": [...],
   "invoiceLines": [...]
 }
@@ -193,53 +204,67 @@ All `DateTime` as ISO 8601 UTC; all `double` at full precision. Drafts excluded.
 ## UI Conventions
 
 - Dark palette in `core/constants/app_colors.dart`: background `0xFF1A1A2E`, table bg `0xFF16213E`, header `0xFF0F3460`, carat accent red `0xFFE94560`, border `0xFF2D3561`
-- **Carat column always red**; Base column dimmed (shared fixed value)
-- Numbers: FR locale via `intl` `NumberFormat('#,##0.00', 'fr_FR')` — space thousands separator, comma decimal (e.g. `30 687 031,02`)
+- **Carat column always red** (`AppColors.accentCarat`); Base column dimmed (`AppColors.textMuted`)
+- Numbers: use `NumberFormatter` named methods — `amount()`, `weight()`, `carat()`, `density()`, `unitPrice()`, `date()`. Do NOT call a generic `.format()` — no such method exists. Internally strips intl's U+202F narrow no-break space (fr_FR grouping) because PDF base fonts can't encode it.
 - Responsive: `core/utils/responsive.dart` — mobile < 600 px gets horizontally scrollable table, tablet ≥ 600 px gets full-width table
 - Invoice header: `Bamako le: [date]` + `Nombre Barres: [n]` — location (default `'Bamako'`) and issueDate editable while drafting; barCount is computed
-- Save & Print button disabled when no lines exist or invoice is already saved
 - PDF (PrintService): landscape, `pw.TableBorder` grid, carat column in `PdfColors.red`, same FR formatting as UI
 
 ## Implementation Gotchas
 
 - Drift row classes renamed via `@DataClassName` (`InvoiceRow`, `InvoiceLineRow`) to avoid clashing with domain entities; mapping in `data/repositories/invoice_mappers.dart`
-- `NumberFormatter` strips intl's U+202F narrow no-break space (fr_FR grouping) — PDF base fonts can't encode it
 - `invoice_lines.invoiceId` has `onDelete: KeyAction.cascade` + `PRAGMA foreign_keys = ON` in `beforeOpen` — discarding a draft deletes its lines automatically
 - `basePrice` is locked once an invoice has lines (`updateDraftHeader` throws) — stored line amounts would diverge from the header
 - `AppDatabase.forTesting(NativeDatabase.memory())` constructor used in all Drift tests — no file I/O needed
 - ViewModels subscribe to Drift streams in their constructor (`_repo.watchX().listen(...)`) and cancel in `dispose()` — never use `StreamBuilder` in views, drive UI from ViewModel state
-- `google_sign_in` v7 API: `GoogleSignIn.instance.initialize()` called once; authorization via `authorizationClient.authorizationHeaders(_scopes, promptIfNecessary: bool)` — no `GoogleSignIn(scopes: [...])` constructor style
+- `google_sign_in` v7 API: `GoogleSignIn.instance.initialize()` called once in `main.dart` (before `runApp`); authorization via `authorizationClient.authorizationHeaders(_scopes, promptIfNecessary: bool)` — no `GoogleSignIn(scopes: [...])` constructor style
 - `InvoiceRepositoryImpl` receives both `AppDatabase` and `GoldBarCalculatorService` — it calls the calculator internally so DAOs stay pure data-access
+- Comma input (`replaceAll(',', '.')`) needed before `double.tryParse()` for FR locale keyboards
 
 ## Out of Scope
 
 No customer/client entity, no authentication, no multi-user, no sync conflict resolution, no push notifications for backup reminders.
 
-## Active Development Order — Google Drive Migration
+## New UX Phase
+
+Replaces the current 3-screen flow (List → Form → Detail) with:
+- **`InvoiceEntryScreen`** — single home screen combining base price input, poids+eaux entry card, real-time preview, line table, and Save & Print
+- **`AppShell`** — root `Scaffold` wrapping `InvoiceEntryScreen` with `AppDrawer` (Drawer nav) and `BackupStatusDot` in AppBar
+- **`InvoiceHistoryScreen`** — accessed from Drawer; read-only list of saved invoices
+- **`InvoiceDetailScreen`** (new version) — read-only detail + Reprint; no longer handles draft editing
+
+New ViewModels needed:
+- `InvoiceEntryViewModel` — merges concerns of `InvoiceFormViewModel` + `InvoiceDetailViewModel`: manages basePrice, grossWeight, waterWeight, live preview (`currentPreview`), draft lifecycle, line list, `canAddLine`, `isSavingAndPrinting`, `shouldShowBackupReminder`/`backupReminderMessage`/`refreshBackupStatus()`
+- `InvoiceHistoryViewModel` — watches saved invoices, loads selected invoice + its lines for detail view, `reprintInvoice()`
+
+New routes:
+```
+/           → AppShell (InvoiceEntryScreen body)
+/history    → InvoiceHistoryScreen
+/history/:id → InvoiceDetailScreen(invoiceId)
+/backup     → BackupScreen (unchanged)
+```
+
+Key UX behaviors for `InvoiceEntryScreen`:
+- Base price persists across "Ajouter barre" — only gross/water fields clear
+- After clear: focus returns to gross weight field automatically
+- Preview shows `—` placeholders when inputs are empty/invalid
+- After "Enregistrer & Imprimer": all fields clear, table empties, ready for new invoice immediately
+- `BackupReminderBanner` above entry form; `BackupStatusDot` (colored circle) in AppBar
 
 **Confirm with user before each step.**
 
 ```
-Step 1. REMOVE Supabase ✓ DONE
-Step 2. MIGRATE Drift schema ✓ DONE (schemaVersion = 2, onUpgrade drops sync_queue, removes syncedAt columns)
-Step 3. core/ additions ✓ DONE (prefs_keys.dart, backup_exceptions.dart)
-Step 4. domain/services/ — ExportService + ImportService + BackupService ✓ DONE
-Step 5. data/remote/google_drive/ — GoogleDriveService + DriveBackupFile ✓ DONE
-
-Step 6. features/backup/viewmodels/ — BackupViewModel + BackupStatus enum (NOT DONE)
-
-Step 7. Update InvoiceListViewModel — shouldShowBackupReminder, backupReminderMessage, loadLastBackupDate() (NOT DONE)
-
-Step 8. Update InvoiceDetailViewModel — fire-and-forget autoBackupIfConnected() in saveAndPrint() (NOT DONE)
-
-Step 9. Update main.dart — _autoBackupOnStartupIfNeeded() after services init (NOT DONE)
-
-Step 10. features/backup/views/ — BackupScreen UI (NOT DONE)
-
-Step 11. features/invoice/widgets/ — BackupReminderBanner (NOT DONE)
-
-Step 12. Update InvoiceListScreen — add BackupReminderBanner above DraftBanner (NOT DONE)
-
-Step 13. app/ — update di.dart (add ExportService, ImportService, GoogleDriveService, BackupService, BackupViewModel)
-         + router.dart (/backup route) + AppBar backup icon (NOT DONE)
+Step 1. app/app.dart — AppShell widget (Scaffold + AppBar + AppDrawer + InvoiceEntryScreen)
+Step 2. app/router.dart — new routes (/, /history, /history/:id, /backup)
+Step 3. features/invoice/widgets/app_drawer.dart — History + Backup items
+Step 4. features/invoice/widgets/backup_status_dot.dart
+Step 5. features/invoice/viewmodels/invoice_entry_viewmodel.dart
+Step 6. features/invoice/widgets/ — _BasePriceField, _WeightField, _PreviewBlock, _AddBarButton
+Step 7. features/invoice/widgets/invoice_table.dart — update/reuse for EntryScreen + DetailScreen
+Step 8. features/invoice/views/invoice_entry_screen.dart — full assembly, controller management, responsive layout
+Step 9. features/invoice/viewmodels/invoice_history_viewmodel.dart
+Step 10. features/invoice/views/invoice_history_screen.dart
+Step 11. features/invoice/views/invoice_detail_screen.dart — replace with read-only + Reprint
+Step 12. app/di.dart — add InvoiceEntryViewModel, InvoiceHistoryViewModel providers
 ```

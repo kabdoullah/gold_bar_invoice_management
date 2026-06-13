@@ -23,6 +23,11 @@ class PrintService {
     fontSize: 10,
     fontWeight: pw.FontWeight.bold,
   );
+  static final _totalCaratStyle = pw.TextStyle(
+    fontSize: 10,
+    fontWeight: pw.FontWeight.bold,
+    color: PdfColors.red,
+  );
 
   /// Entry point called by InvoiceDetailViewModel.saveAndPrint().
   /// The native sheet offers both "Print" and "Share".
@@ -47,7 +52,7 @@ class PrintService {
           pw.SizedBox(height: 12),
           _buildTable(invoice, lines),
           pw.SizedBox(height: 12),
-          _buildTotals(invoice),
+          _buildTotals(invoice, lines),
         ],
       ),
     );
@@ -119,7 +124,7 @@ class PrintService {
     );
   }
 
-  pw.Widget _buildTotals(Invoice invoice) {
+  pw.Widget _buildTotals(Invoice invoice, List<InvoiceLine> lines) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -134,6 +139,14 @@ class PrintService {
             pw.Text(
               'Total Eaux: ${NumberFormatter.weight(invoice.totalWaterWeight)}',
               style: _totalStyle,
+            ),
+            pw.Text(
+              'Total Densité: ${NumberFormatter.density(lines.totalDensity)}',
+              style: _totalStyle,
+            ),
+            pw.Text(
+              'Total Carat: ${NumberFormatter.carat(lines.totalCarat)}',
+              style: _totalCaratStyle,
             ),
           ],
         ),

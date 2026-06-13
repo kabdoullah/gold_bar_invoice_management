@@ -2,28 +2,30 @@ import 'package:go_router/go_router.dart';
 
 import '../features/backup/views/backup_screen.dart';
 import '../features/invoice/views/invoice_detail_screen.dart';
-import '../features/invoice/views/invoice_form_screen.dart';
-import '../features/invoice/views/invoice_list_screen.dart';
+import '../features/invoice/views/invoice_history_screen.dart';
+import 'app_shell.dart';
 
 final appRouter = GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const InvoiceListScreen(),
+      builder: (_, s) => const AppShell(),
     ),
     GoRoute(
-      path: '/invoices/new',
-      builder: (context, state) => const InvoiceFormScreen(),
-    ),
-    GoRoute(
-      path: '/invoices/:id',
-      builder: (context, state) => InvoiceDetailScreen(
-        invoiceId: int.parse(state.pathParameters['id']!),
-      ),
+      path: '/history',
+      builder: (_, s) => const InvoiceHistoryScreen(),
+      routes: [
+        GoRoute(
+          path: ':id',
+          builder: (_, state) => InvoiceDetailScreen(
+            invoiceId: int.parse(state.pathParameters['id']!),
+          ),
+        ),
+      ],
     ),
     GoRoute(
       path: '/backup',
-      builder: (context, state) => const BackupScreen(),
+      builder: (_, s) => const BackupScreen(),
     ),
   ],
 );

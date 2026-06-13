@@ -11,6 +11,8 @@ import '../domain/services/gold_bar_calculator_service.dart';
 import '../domain/services/import_service.dart';
 import '../domain/services/print_service.dart';
 import '../features/backup/viewmodels/backup_view_model.dart';
+import '../features/invoice/viewmodels/invoice_entry_viewmodel.dart';
+import '../features/invoice/viewmodels/invoice_history_viewmodel.dart';
 
 /// Root Provider tree — order matters: each entry may read the ones
 /// declared above it.
@@ -56,6 +58,24 @@ List<SingleChildWidget> buildProviders() {
         importService: ctx.read<ImportService>(),
         driveService:  ctx.read<GoogleDriveService>(),
       )..init(),
+    ),
+    // Global: shared by the AppBar BackupStatusDot and the entry screen
+    // body — single-user app, one live draft at a time.
+    ChangeNotifierProvider<InvoiceEntryViewModel>(
+      create: (ctx) => InvoiceEntryViewModel(
+        ctx.read<IInvoiceRepository>(),
+        ctx.read<GoldBarCalculatorService>(),
+        ctx.read<PrintService>(),
+        ctx.read<BackupService>(),
+      ),
+    ),
+    // Global: shared across the /history list and /history/:id detail so
+    // the loaded selection survives navigation.
+    ChangeNotifierProvider<InvoiceHistoryViewModel>(
+      create: (ctx) => InvoiceHistoryViewModel(
+        ctx.read<IInvoiceRepository>(),
+        ctx.read<PrintService>(),
+      ),
     ),
   ];
 }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_bar_invoice_management/core/constants/app_colors.dart';
 import 'package:gold_bar_invoice_management/domain/entities/invoice_line.dart';
-import 'package:gold_bar_invoice_management/features/invoice/widgets/draft_banner.dart';
 import 'package:gold_bar_invoice_management/features/invoice/widgets/invoice_table.dart';
 import 'package:gold_bar_invoice_management/features/invoice/widgets/save_and_print_button.dart';
 
@@ -21,26 +20,6 @@ void main() {
     unitPrice: 71221.09,
     amount: 30687031.02,
   );
-
-  group('DraftBanner', () {
-    testWidgets('shows date and triggers callbacks', (tester) async {
-      var resumed = false;
-      var discarded = false;
-      await tester.pumpWidget(_wrap(DraftBanner(
-        draftDate: DateTime(2026, 6, 6),
-        onResume: () => resumed = true,
-        onDiscard: () => discarded = true,
-      )));
-
-      expect(find.textContaining('06/06/2026'), findsOneWidget);
-
-      await tester.tap(find.text('Reprendre'));
-      expect(resumed, true);
-
-      await tester.tap(find.text('Abandonner'));
-      expect(discarded, true);
-    });
-  });
 
   group('InvoiceTable', () {
     testWidgets('renders FR-formatted values, carat in red', (tester) async {

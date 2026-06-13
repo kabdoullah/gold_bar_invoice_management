@@ -125,36 +125,45 @@ class PrintService {
   }
 
   pw.Widget _buildTotals(Invoice invoice, List<InvoiceLine> lines) {
-    return pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+    // 2 rows × 3 columns grid. The 6th cell is empty.
+    return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Column(
+        pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text(
-              'Total Poids Brut: ${NumberFormatter.weight(invoice.totalGrossWeight)}',
-              style: _totalStyle,
-            ),
-            pw.Text(
-              'Total Eaux: ${NumberFormatter.weight(invoice.totalWaterWeight)}',
-              style: _totalStyle,
-            ),
-            pw.Text(
-              'Total Densité: ${NumberFormatter.density(lines.totalDensity)}',
-              style: _totalStyle,
-            ),
-            pw.Text(
-              'Total Carat: ${NumberFormatter.carat(lines.totalCarat)}',
+            _totalCell(
+                'Poids Total: ${NumberFormatter.weight(invoice.totalGrossWeight)}'),
+                _totalCell(
+              'Carat Total: ${NumberFormatter.carat(lines.totalCarat)}',
               style: _totalCaratStyle,
+            ),
+            _totalCell(
+              'Montant Total: ${NumberFormatter.amount(invoice.totalAmount)}',
             ),
           ],
         ),
-        pw.Text(
-          'Total Montant: ${NumberFormatter.amount(invoice.totalAmount)}',
-          style: _totalStyle,
+        pw.SizedBox(height: 4),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            _totalCell(
+              'Eaux Total: ${NumberFormatter.weight(invoice.totalWaterWeight)}',
+            ),
+             _totalCell(
+              'Densité Total: ${NumberFormatter.density(lines.totalDensity)}',
+            ),
+            pw.Expanded(child: pw.SizedBox()),
+          ],
         ),
       ],
+    );
+  }
+
+  /// One equal-width cell in the 3-column totals grid.
+  pw.Widget _totalCell(String text, {pw.TextStyle? style}) {
+    return pw.Expanded(
+      child: pw.Text(text, style: style ?? _totalStyle),
     );
   }
 

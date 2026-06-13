@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/number_formatter.dart';
-import '../../../core/utils/responsive.dart';
 import '../../../domain/entities/invoice_line.dart';
 
 /// Dense tabular display of invoice lines, faithful to the original
-/// desktop software. Tablet: full width. Mobile: horizontal scroll.
+/// desktop software.
+///
+/// Scroll is the parent's decision: [scrollable] true wraps the table in a
+/// horizontal [SingleChildScrollView] with fixed column widths (mobile);
+/// false renders flexible full-width columns (tablet). The parent picks
+/// based on [Responsive].
 ///
 /// Carat column always red; Base column dimmed (shared fixed value).
 class InvoiceTable extends StatelessWidget {
@@ -14,12 +18,17 @@ class InvoiceTable extends StatelessWidget {
     super.key,
     required this.lines,
     this.onDeleteLine,
+    this.scrollable = false,
   });
 
   final List<InvoiceLine> lines;
 
   /// Non-null while the invoice is a draft — shows a delete icon per row.
   final void Function(InvoiceLine line)? onDeleteLine;
+
+  /// When true, wrap in a horizontal scroll with fixed column widths.
+  /// When false, columns flex to fill the available width.
+  final bool scrollable;
 
   static const _headerLabels = [
     'Base',
@@ -35,13 +44,13 @@ class InvoiceTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (Responsive.isTablet(context)) {
-      return _buildTable(flexible: true);
+    if (scrollable) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: _buildTable(flexible: false),
+      );
     }
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: _buildTable(flexible: false),
-    );
+    return _buildTable(flexible: true);
   }
 
   Widget _buildTable({required bool flexible}) {

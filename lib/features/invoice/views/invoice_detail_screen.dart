@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../../../core/utils/number_formatter.dart';
 import '../viewmodels/invoice_history_viewmodel.dart';
-import '../widgets/invoice_table.dart';
-import '../widgets/totals_widget.dart';
+import '../widgets/invoice_detail_panel.dart';
 
-/// Read-only view of a saved invoice, reached from [InvoiceHistoryScreen].
-/// Header + dense line table + totals + Reprint. No editing, no deletion —
-/// reprint regenerates the PDF straight from the stored values.
+/// Read-only view of a saved invoice — mobile only (on tablet the detail
+/// shows in the master-detail pane of [InvoiceHistoryScreen]). Reached via
+/// `push('/history/:id')`. AppBar Reprint regenerates the PDF straight from
+/// the stored values; the body is the shared [InvoiceDetailPanel].
 ///
 /// Stateful only to fire [InvoiceHistoryViewModel.selectInvoice] once on
 /// open; the shared history VM holds the loaded invoice + lines.
@@ -73,34 +72,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${invoice.location} le: '
-                  '${NumberFormatter.date(invoice.issueDate)}',
-                  style: const TextStyle(
-                      color: AppColors.textMuted, fontSize: 13),
-                ),
-                Text(
-                  'Nombre Barres: ${invoice.barCount}',
-                  style: const TextStyle(
-                      color: AppColors.textMuted, fontSize: 13),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            InvoiceTable(lines: lines),
-            const SizedBox(height: 8),
-            TotalsWidget(invoice: invoice, lines: lines),
-          ],
-        ),
-      ),
+      body: InvoiceDetailPanel(invoice: invoice, lines: lines),
     );
   }
 }

@@ -88,31 +88,12 @@ class _InvoiceEntryScreenState extends State<InvoiceEntryScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Base price — always full width, above both layouts.
                 _BasePriceField(controller: _baseCtrl, vm: vm),
                 const SizedBox(height: 12),
-                _EntryCard(
-                  vm: vm,
-                  grossCtrl: _grossCtrl,
-                  waterCtrl: _waterCtrl,
-                  grossFocus: _grossFocus,
-                  onAdd: () => _onAdd(vm),
-                ),
-                const SizedBox(height: 16),
-                if (vm.lines.isNotEmpty) ...[
-                  InvoiceTable(
-                    lines: vm.lines,
-                    onDeleteLine: (line) => vm.deleteLine(line.id),
-                  ),
-                  const SizedBox(height: 8),
-                  if (vm.invoice != null)
-                    TotalsWidget(invoice: vm.invoice!, lines: vm.lines),
-                  const SizedBox(height: 16),
-                ],
-                SaveAndPrintButton(
-                  enabled: vm.canSaveAndPrint,
-                  isSaving: vm.isSavingAndPrinting,
-                  onPressed: () => _onSave(vm),
-                ),
+                Responsive.isTablet(context)
+                    ? _buildTabletLayout(vm)
+                    : _buildMobileLayout(vm),
               ],
             ),
           ),
@@ -120,6 +101,74 @@ class _InvoiceEntryScreenState extends State<InvoiceEntryScreen> {
       ],
     );
   }
+
+  /// Mobile: entry card, then table below, then full-width Save & Print.
+  Widget _buildMobileLayout(InvoiceEntryViewModel vm) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _entryCard(vm),
+        const SizedBox(height: 16),
+        if (vm.lines.isNotEmpty) ...[
+          InvoiceTable(
+            lines: vm.lines,
+            onDeleteLine: (line) => vm.deleteLine(line.id),
+            scrollable: true,
+          ),
+          const SizedBox(height: 8),
+          if (vm.invoice != null)
+            TotalsWidget(invoice: vm.invoice!, lines: vm.lines),
+          const SizedBox(height: 16),
+        ],
+        _saveButton(vm),
+      ],
+    );
+  }
+
+  /// Tablet: 200px entry column on the left, table + totals + Save on the
+  /// right (flexible, full-width table — no horizontal scroll).
+  Widget _buildTabletLayout(InvoiceEntryViewModel vm) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 200, child: _entryCard(vm)),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (vm.lines.isNotEmpty) ...[
+                InvoiceTable(
+                  lines: vm.lines,
+                  onDeleteLine: (line) => vm.deleteLine(line.id),
+                  scrollable: false,
+                ),
+                const SizedBox(height: 8),
+                if (vm.invoice != null)
+                  TotalsWidget(invoice: vm.invoice!, lines: vm.lines),
+                const SizedBox(height: 16),
+              ],
+              _saveButton(vm),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _entryCard(InvoiceEntryViewModel vm) => _EntryCard(
+        vm: vm,
+        grossCtrl: _grossCtrl,
+        waterCtrl: _waterCtrl,
+        grossFocus: _grossFocus,
+        onAdd: () => _onAdd(vm),
+      );
+
+  Widget _saveButton(InvoiceEntryViewModel vm) => SaveAndPrintButton(
+        enabled: vm.canSaveAndPrint,
+        isSaving: vm.isSavingAndPrinting,
+        onPressed: () => _onSave(vm),
+      );
 
   static String _formatBase(double value) => value == value.roundToDouble()
       ? value.toInt().toString()
@@ -194,32 +243,15 @@ class _EntryCard extends StatelessWidget {
 
     final addButton = _AddBarButton(enabled: vm.canAddLine, onPressed: onAdd);
 
-    final Widget body = Responsive.isTablet(context)
-        ? Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: fields),
-              const SizedBox(width: 24),
-              Expanded(
-                child: Column(
-                  children: [
-                    preview,
-                    const SizedBox(height: 12),
-                    addButton,
-                  ],
-                ),
-              ),
-            ],
-          )
-        : Column(
-            children: [
-              fields,
-              const Divider(color: AppColors.tableBorder, height: 20),
-              preview,
-              const SizedBox(height: 12),
-              addButton,
-            ],
-          );
+    final Widget body = Column(
+      children: [
+        fields,
+        const Divider(color: AppColors.tableBorder, height: 20),
+        preview,
+        const SizedBox(height: 12),
+        addButton,
+      ],
+    );
 
     return Container(
       decoration: BoxDecoration(

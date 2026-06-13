@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../data/remote/google_drive/google_drive_service.dart';
 import '../viewmodels/backup_view_model.dart';
 
@@ -41,22 +42,36 @@ class _BackupBodyState extends State<_BackupBody> {
   Widget build(BuildContext context) {
     final vm = context.watch<BackupViewModel>();
 
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _BackupCard(vm: vm),
+        const SizedBox(height: 16),
+        _RestoreCard(
+          vm: vm,
+          selected: _selected,
+          onSelect: (f) => setState(() => _selected = f),
+        ),
+        const SizedBox(height: 16),
+        _WarningNote(),
+      ],
+    );
+
+    // Tablet: centered, max-width 540, padding 24. Mobile: full-width, 16.
+    if (Responsive.isTablet(context)) {
+      return Center(
+        child: SizedBox(
+          width: 540,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: content,
+          ),
+        ),
+      );
+    }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _BackupCard(vm: vm),
-          const SizedBox(height: 16),
-          _RestoreCard(
-            vm: vm,
-            selected: _selected,
-            onSelect: (f) => setState(() => _selected = f),
-          ),
-          const SizedBox(height: 16),
-          _WarningNote(),
-        ],
-      ),
+      child: content,
     );
   }
 }

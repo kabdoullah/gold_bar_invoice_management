@@ -10,4 +10,12 @@ abstract final class Responsive {
 
   static bool isTablet(BuildContext context) =>
       MediaQuery.sizeOf(context).width >= tabletBreakpoint;
+
+  /// Returns [mobile] below the breakpoint, [tablet] at or above it.
+  static T value<T>(
+    BuildContext context, {
+    required T mobile,
+    required T tablet,
+  }) =>
+      isMobile(context) ? mobile : tablet;
 }

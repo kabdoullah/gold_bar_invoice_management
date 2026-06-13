@@ -18,10 +18,10 @@ class TotalsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stats = <Widget>[
-      _Stat('Poids Brut', NumberFormatter.weight(invoice.totalGrossWeight)),
-      _Stat('Eaux', NumberFormatter.weight(invoice.totalWaterWeight)),
-      _Stat('Densité', NumberFormatter.density(lines.totalDensity)),
-      _Stat('Carat', NumberFormatter.carat(lines.totalCarat), isRed: true),
+      _Stat('Poids Total', NumberFormatter.weight(invoice.totalGrossWeight)),
+      _Stat('Eaux Total', NumberFormatter.weight(invoice.totalWaterWeight)),
+      _Stat('Densité Total', NumberFormatter.density(lines.totalDensity)),
+      _Stat('Carat Total', NumberFormatter.carat(lines.totalCarat), isRed: true),
     ];
 
     final grid = Responsive.isTablet(context)
@@ -52,7 +52,7 @@ class TotalsWidget extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               const Text(
-                'Total Montant',
+                'Montant Total',
                 style: TextStyle(color: AppColors.textMuted, fontSize: 13),
               ),
               Text(

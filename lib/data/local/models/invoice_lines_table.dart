@@ -24,5 +24,4 @@ class InvoiceLines extends Table {
   RealColumn get carat => real()();
   RealColumn get unitPrice => real()();
   RealColumn get amount => real()();
-  DateTimeColumn get syncedAt => dateTime().nullable()();
 }

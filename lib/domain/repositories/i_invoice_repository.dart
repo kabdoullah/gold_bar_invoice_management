@@ -63,10 +63,6 @@ abstract interface class IInvoiceRepository {
   /// Finalizes a draft: status → saved, updatedAt refreshed.
   Future<void> finalizeInvoice(int id);
 
-  /// Enqueues the invoice and all its lines for cloud sync.
-  /// Call only after [finalizeInvoice].
-  Future<void> enqueueForSync(int invoiceId);
-
   /// Deletes a draft invoice and its lines (DraftBanner "Discard").
   Future<void> discardDraft(int id);
 }

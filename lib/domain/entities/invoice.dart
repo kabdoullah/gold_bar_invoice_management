@@ -28,12 +28,7 @@ abstract class Invoice with _$Invoice {
     required double totalAmount,
     required DateTime createdAt,
     required DateTime updatedAt,
-
-    /// Null until the invoice has been pushed to Supabase.
-    DateTime? syncedAt,
   }) = _Invoice;
 
   bool get isDraft => status == InvoiceStatus.draft;
-
-  bool get isSynced => syncedAt != null;
 }

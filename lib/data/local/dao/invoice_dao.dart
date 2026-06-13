@@ -12,6 +12,17 @@ part 'invoice_dao.g.dart';
 class InvoiceDao extends DatabaseAccessor<AppDatabase> with _$InvoiceDaoMixin {
   InvoiceDao(super.db);
 
+  /// All saved invoices, newest first — one-shot read for export.
+  Future<List<InvoiceRow>> getSaved() {
+    return (select(invoices)
+          ..where((i) => i.status.equals('saved'))
+          ..orderBy([
+            (i) => OrderingTerm.desc(i.issueDate),
+            (i) => OrderingTerm.desc(i.id),
+          ]))
+        .get();
+  }
+
   /// Saved invoices for the list screen, newest first.
   Stream<List<InvoiceRow>> watchSaved() {
     return (select(invoices)

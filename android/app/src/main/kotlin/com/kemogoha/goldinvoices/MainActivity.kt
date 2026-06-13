@@ -1,4 +1,4 @@
-package com.example.gold_bar_invoice_management
+package com.kemogoha.goldinvoices
 
 import io.flutter.embedding.android.FlutterActivity
 

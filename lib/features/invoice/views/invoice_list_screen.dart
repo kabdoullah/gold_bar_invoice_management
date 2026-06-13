@@ -6,9 +6,10 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/number_formatter.dart';
 import '../../../domain/entities/invoice.dart';
 import '../../../domain/repositories/i_invoice_repository.dart';
+import '../../../domain/services/backup_service.dart';
 import '../viewmodels/invoice_list_viewmodel.dart';
+import '../widgets/backup_reminder_banner.dart';
 import '../widgets/draft_banner.dart';
-import '../widgets/sync_status_chip.dart';
 
 /// Home screen: saved invoices, DraftBanner when a draft exists,
 /// FAB to start a new invoice.
@@ -18,8 +19,10 @@ class InvoiceListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) =>
-          InvoiceListViewModel(context.read<IInvoiceRepository>()),
+      create: (ctx) => InvoiceListViewModel(
+        ctx.read<IInvoiceRepository>(),
+        ctx.read<BackupService>(),
+      ),
       child: const _InvoiceListView(),
     );
   }
@@ -35,10 +38,18 @@ class _InvoiceListView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Factures'),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: Center(child: SyncStatusChip()),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.backup_outlined),
+            tooltip: 'Sauvegarde & Restauration',
+            onPressed: () async {
+              await context.push<void>('/backup');
+              if (context.mounted) {
+                context
+                    .read<InvoiceListViewModel>()
+                    .refreshBackupStatus();
+              }
+            },
           ),
         ],
       ),
@@ -57,6 +68,18 @@ class _InvoiceListView extends StatelessWidget {
       ),
       body: Column(
         children: [
+          if (vm.shouldShowBackupReminder)
+            BackupReminderBanner(
+              message: vm.backupReminderMessage,
+              onBackupNow: () async {
+                await context.push<void>('/backup');
+                if (context.mounted) {
+                  context
+                      .read<InvoiceListViewModel>()
+                      .refreshBackupStatus();
+                }
+              },
+            ),
           if (vm.draft != null)
             DraftBanner(
               draftDate: vm.draft!.createdAt,
@@ -139,25 +162,12 @@ class _InvoiceTile extends StatelessWidget {
         '${invoice.barCount} barre${invoice.barCount > 1 ? 's' : ''}',
         style: const TextStyle(color: AppColors.textMuted),
       ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            NumberFormatter.amount(invoice.totalAmount),
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Icon(
-            invoice.isSynced ? Icons.cloud_done : Icons.cloud_upload,
-            size: 16,
-            color: invoice.isSynced
-                ? AppColors.syncSuccess
-                : AppColors.syncWarning,
-          ),
-        ],
+      trailing: Text(
+        NumberFormatter.amount(invoice.totalAmount),
+        style: const TextStyle(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       onTap: () => context.push('/invoices/${invoice.id}'),
     );

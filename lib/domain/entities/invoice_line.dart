@@ -37,6 +37,5 @@ abstract class InvoiceLine with _$InvoiceLine {
 
     /// Line total: unitPrice × grossWeight ("Montant").
     required double amount,
-    DateTime? syncedAt,
   }) = _InvoiceLine;
 }

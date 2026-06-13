@@ -29,7 +29,6 @@ void main() {
     expect(row.status, 'draft');
     expect(row.barCount, 0);
     expect(row.totalAmount, 0);
-    expect(row.syncedAt, isNull);
   });
 
   test('invoiceNumber is unique', () async {
@@ -58,18 +57,5 @@ void main() {
 
     final lines = await db.select(db.invoiceLines).get();
     expect(lines, isEmpty);
-  });
-
-  test('sync_queue stores target table under column table_name', () async {
-    await db.into(db.syncQueue).insert(SyncQueueCompanion.insert(
-          targetTable: 'invoices',
-          operation: 'CREATE',
-          recordId: '1',
-          payload: '{}',
-        ));
-
-    final row = await db.select(db.syncQueue).getSingle();
-    expect(row.targetTable, 'invoices');
-    expect(row.attempts, 0);
   });
 }

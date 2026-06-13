@@ -7,6 +7,7 @@ import '../../../domain/entities/invoice.dart';
 import '../../../domain/entities/invoice_line.dart';
 import '../../../domain/entities/invoice_line_preview.dart';
 import '../../../domain/repositories/i_invoice_repository.dart';
+import '../../../domain/services/backup_service.dart';
 import '../../../domain/services/gold_bar_calculator_service.dart';
 import '../../../domain/services/print_service.dart';
 
@@ -18,7 +19,9 @@ class InvoiceDetailViewModel extends ChangeNotifier {
     this._calculator,
     this._printService, {
     required int invoiceId,
-  }) {
+    BackupService? backupService,
+  // ignore: prefer_initializing_formals — public param can't match private field name
+  })  : _backupService = backupService {
     _invoiceSub = _repo.watchInvoice(invoiceId).listen((invoice) {
       _invoice = invoice;
       _isLoading = false;
@@ -30,9 +33,10 @@ class InvoiceDetailViewModel extends ChangeNotifier {
     });
   }
 
-  final IInvoiceRepository _repo;
+  final IInvoiceRepository       _repo;
   final GoldBarCalculatorService _calculator;
-  final PrintService _printService;
+  final PrintService             _printService;
+  final BackupService?           _backupService;
 
   late final StreamSubscription<Invoice?> _invoiceSub;
   late final StreamSubscription<List<InvoiceLine>> _linesSub;
@@ -100,8 +104,9 @@ class InvoiceDetailViewModel extends ChangeNotifier {
         ));
   }
 
-  /// Finalizes the invoice: status draft → saved, enqueues for sync,
-  /// generates the PDF and opens the native print/share sheet.
+  /// Finalizes the invoice: status draft → saved, generates the PDF and
+  /// opens the native print/share sheet. Triggers a fire-and-forget
+  /// auto-backup after printing — never blocks the user.
   Future<bool> saveAndPrint() async {
     final invoice = _invoice;
     if (invoice == null) return false;
@@ -110,9 +115,10 @@ class InvoiceDetailViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       await _repo.finalizeInvoice(invoice.id);
-      await _repo.enqueueForSync(invoice.id);
       final updated = await _repo.getInvoice(invoice.id);
       await _printService.printInvoice(updated ?? invoice, _lines);
+      // ignore: unawaited_futures
+      _backupService?.autoBackupIfConnected();
       return true;
     } on BusinessException catch (e) {
       _error = e.message;

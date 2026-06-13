@@ -23,7 +23,4 @@ abstract final class BusinessConstants {
   /// Above this line count, batch recalculation moves into an isolate
   /// via `compute()`.
   static const int isolateLineThreshold = 50;
-
-  /// A sync_queue operation is abandoned after this many failed attempts.
-  static const int maxSyncAttempts = 3;
 }

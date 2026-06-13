@@ -3,17 +3,15 @@ import 'package:drift_flutter/drift_flutter.dart';
 
 import '../dao/invoice_dao.dart';
 import '../dao/invoice_line_dao.dart';
-import '../dao/sync_queue_dao.dart';
 import '../models/invoice_lines_table.dart';
 import '../models/invoices_table.dart';
-import '../models/sync_queue_table.dart';
 
 part 'app_database.g.dart';
 
 /// Single source of truth for all app data (offline-first).
 @DriftDatabase(
-  tables: [Invoices, InvoiceLines, SyncQueue],
-  daos: [InvoiceDao, InvoiceLineDao, SyncQueueDao],
+  tables: [Invoices, InvoiceLines],
+  daos: [InvoiceDao, InvoiceLineDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -22,11 +20,21 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            // Remove syncedAt columns. alterTable creates a new table with the
+            // current schema, copies all matching columns, and drops the old one.
+            await m.alterTable(TableMigration(invoices));
+            await m.alterTable(TableMigration(invoiceLines));
+            // Drop the sync_queue table entirely.
+            await customStatement('DROP TABLE IF EXISTS sync_queue');
+          }
+        },
         beforeOpen: (details) async {
           // Required for the invoice_lines → invoices cascade delete.
           await customStatement('PRAGMA foreign_keys = ON');

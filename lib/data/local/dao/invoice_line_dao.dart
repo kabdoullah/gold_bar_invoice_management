@@ -50,12 +50,6 @@ class InvoiceLineDao extends DatabaseAccessor<AppDatabase>
     await (delete(invoiceLines)..where((l) => l.id.equals(id))).go();
   }
 
-  /// Stamps a line as pushed to the cloud.
-  Future<void> markSynced(int id, DateTime at) async {
-    await (update(invoiceLines)..where((l) => l.id.equals(id)))
-        .write(InvoiceLinesCompanion(syncedAt: Value(at)));
-  }
-
   /// Next bar number for an invoice: max(barNumber) + 1, starting at 1.
   Future<int> nextBarNumber(int invoiceId) async {
     final maxBar = invoiceLines.barNumber.max();

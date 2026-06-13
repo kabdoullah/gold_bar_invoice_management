@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
 
 import '../../core/errors/business_exceptions.dart';
@@ -163,34 +161,6 @@ class InvoiceRepositoryImpl implements IInvoiceRepository {
         updatedAt: Value(DateTime.now()),
       ),
     );
-  }
-
-  @override
-  Future<void> enqueueForSync(int invoiceId) async {
-    final invoice = await _requireInvoice(invoiceId);
-    if (invoice.status != 'saved') {
-      throw const InvoiceStateException(
-        'Only saved invoices are enqueued for sync',
-      );
-    }
-    final lines = await _db.invoiceLineDao.getForInvoice(invoiceId);
-
-    await _db.transaction(() async {
-      await _db.syncQueueDao.enqueue(SyncQueueCompanion.insert(
-        targetTable: 'invoices',
-        operation: 'CREATE',
-        recordId: invoice.id.toString(),
-        payload: jsonEncode(invoice.toSyncJson()),
-      ));
-      for (final line in lines) {
-        await _db.syncQueueDao.enqueue(SyncQueueCompanion.insert(
-          targetTable: 'invoice_lines',
-          operation: 'CREATE',
-          recordId: line.id.toString(),
-          payload: jsonEncode(line.toSyncJson()),
-        ));
-      }
-    });
   }
 
   @override

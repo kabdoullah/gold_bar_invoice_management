@@ -192,9 +192,6 @@ void main() {
       expect(printService.printCalls, 1);
       expect(printService.lastInvoice?.status, InvoiceStatus.saved);
       expect(printService.lastLines, hasLength(1));
-
-      final pending = await db.syncQueueDao.getPending();
-      expect(pending, hasLength(2)); // invoice + 1 line
       expect(vm.canSaveAndPrint, false); // already saved
 
       vm.dispose();

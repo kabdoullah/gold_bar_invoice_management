@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_bar_invoice_management/core/errors/business_exceptions.dart';
@@ -149,29 +147,6 @@ void main() {
       expect(invoice?.status, InvoiceStatus.saved);
     });
 
-    test('enqueueForSync writes invoice then lines with JSON payloads',
-        () async {
-      final id = await createDraft();
-      await repo.addLine(invoiceId: id, grossWeight: 430.87, waterWeight: 23.67);
-      await repo.addLine(invoiceId: id, grossWeight: 126.39, waterWeight: 6.87);
-      await repo.finalizeInvoice(id);
-      await repo.enqueueForSync(id);
-
-      final pending = await db.syncQueueDao.getPending();
-      expect(pending.map((o) => o.targetTable),
-          ['invoices', 'invoice_lines', 'invoice_lines']);
-
-      final invoicePayload = jsonDecode(pending.first.payload) as Map;
-      expect(invoicePayload['invoice_number'], 'FAC-0001');
-      expect(invoicePayload['status'], 'saved');
-      expect(invoicePayload['bar_count'], 2);
-    });
-
-    test('enqueueForSync refuses a draft', () async {
-      final id = await createDraft();
-      await repo.addLine(invoiceId: id, grossWeight: 430.87, waterWeight: 23.67);
-      expect(repo.enqueueForSync(id), throwsA(isA<InvoiceStateException>()));
-    });
   });
 
   group('discardDraft', () {

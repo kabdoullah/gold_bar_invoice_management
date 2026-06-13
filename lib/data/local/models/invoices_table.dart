@@ -21,7 +21,4 @@ class Invoices extends Table {
   RealColumn get totalAmount => real().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
-
-  /// NULL = not yet pushed to Supabase.
-  DateTimeColumn get syncedAt => dateTime().nullable()();
 }

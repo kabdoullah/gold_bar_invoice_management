@@ -150,17 +150,6 @@ class $InvoicesTable extends Invoices
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
-  static const VerificationMeta _syncedAtMeta = const VerificationMeta(
-    'syncedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> syncedAt = GeneratedColumn<DateTime>(
-    'synced_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -175,7 +164,6 @@ class $InvoicesTable extends Invoices
     totalAmount,
     createdAt,
     updatedAt,
-    syncedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -276,12 +264,6 @@ class $InvoicesTable extends Invoices
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
-    if (data.containsKey('synced_at')) {
-      context.handle(
-        _syncedAtMeta,
-        syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta),
-      );
-    }
     return context;
   }
 
@@ -339,10 +321,6 @@ class $InvoicesTable extends Invoices
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       )!,
-      syncedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}synced_at'],
-      ),
     );
   }
 
@@ -367,9 +345,6 @@ class InvoiceRow extends DataClass implements Insertable<InvoiceRow> {
   final double totalAmount;
   final DateTime createdAt;
   final DateTime updatedAt;
-
-  /// NULL = not yet pushed to Supabase.
-  final DateTime? syncedAt;
   const InvoiceRow({
     required this.id,
     required this.invoiceNumber,
@@ -383,7 +358,6 @@ class InvoiceRow extends DataClass implements Insertable<InvoiceRow> {
     required this.totalAmount,
     required this.createdAt,
     required this.updatedAt,
-    this.syncedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -400,9 +374,6 @@ class InvoiceRow extends DataClass implements Insertable<InvoiceRow> {
     map['total_amount'] = Variable<double>(totalAmount);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
-    if (!nullToAbsent || syncedAt != null) {
-      map['synced_at'] = Variable<DateTime>(syncedAt);
-    }
     return map;
   }
 
@@ -420,9 +391,6 @@ class InvoiceRow extends DataClass implements Insertable<InvoiceRow> {
       totalAmount: Value(totalAmount),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
-      syncedAt: syncedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(syncedAt),
     );
   }
 
@@ -444,7 +412,6 @@ class InvoiceRow extends DataClass implements Insertable<InvoiceRow> {
       totalAmount: serializer.fromJson<double>(json['totalAmount']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
     );
   }
   @override
@@ -463,7 +430,6 @@ class InvoiceRow extends DataClass implements Insertable<InvoiceRow> {
       'totalAmount': serializer.toJson<double>(totalAmount),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'syncedAt': serializer.toJson<DateTime?>(syncedAt),
     };
   }
 
@@ -480,7 +446,6 @@ class InvoiceRow extends DataClass implements Insertable<InvoiceRow> {
     double? totalAmount,
     DateTime? createdAt,
     DateTime? updatedAt,
-    Value<DateTime?> syncedAt = const Value.absent(),
   }) => InvoiceRow(
     id: id ?? this.id,
     invoiceNumber: invoiceNumber ?? this.invoiceNumber,
@@ -494,7 +459,6 @@ class InvoiceRow extends DataClass implements Insertable<InvoiceRow> {
     totalAmount: totalAmount ?? this.totalAmount,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
-    syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
   );
   InvoiceRow copyWithCompanion(InvoicesCompanion data) {
     return InvoiceRow(
@@ -518,7 +482,6 @@ class InvoiceRow extends DataClass implements Insertable<InvoiceRow> {
           : this.totalAmount,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-      syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
     );
   }
 
@@ -536,8 +499,7 @@ class InvoiceRow extends DataClass implements Insertable<InvoiceRow> {
           ..write('totalWaterWeight: $totalWaterWeight, ')
           ..write('totalAmount: $totalAmount, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('syncedAt: $syncedAt')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -556,7 +518,6 @@ class InvoiceRow extends DataClass implements Insertable<InvoiceRow> {
     totalAmount,
     createdAt,
     updatedAt,
-    syncedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -573,8 +534,7 @@ class InvoiceRow extends DataClass implements Insertable<InvoiceRow> {
           other.totalWaterWeight == this.totalWaterWeight &&
           other.totalAmount == this.totalAmount &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt &&
-          other.syncedAt == this.syncedAt);
+          other.updatedAt == this.updatedAt);
 }
 
 class InvoicesCompanion extends UpdateCompanion<InvoiceRow> {
@@ -590,7 +550,6 @@ class InvoicesCompanion extends UpdateCompanion<InvoiceRow> {
   final Value<double> totalAmount;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
-  final Value<DateTime?> syncedAt;
   const InvoicesCompanion({
     this.id = const Value.absent(),
     this.invoiceNumber = const Value.absent(),
@@ -604,7 +563,6 @@ class InvoicesCompanion extends UpdateCompanion<InvoiceRow> {
     this.totalAmount = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
-    this.syncedAt = const Value.absent(),
   });
   InvoicesCompanion.insert({
     this.id = const Value.absent(),
@@ -619,7 +577,6 @@ class InvoicesCompanion extends UpdateCompanion<InvoiceRow> {
     this.totalAmount = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
-    this.syncedAt = const Value.absent(),
   }) : invoiceNumber = Value(invoiceNumber),
        issueDate = Value(issueDate),
        basePrice = Value(basePrice);
@@ -636,7 +593,6 @@ class InvoicesCompanion extends UpdateCompanion<InvoiceRow> {
     Expression<double>? totalAmount,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
-    Expression<DateTime>? syncedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -651,7 +607,6 @@ class InvoicesCompanion extends UpdateCompanion<InvoiceRow> {
       if (totalAmount != null) 'total_amount': totalAmount,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
-      if (syncedAt != null) 'synced_at': syncedAt,
     });
   }
 
@@ -668,7 +623,6 @@ class InvoicesCompanion extends UpdateCompanion<InvoiceRow> {
     Value<double>? totalAmount,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
-    Value<DateTime?>? syncedAt,
   }) {
     return InvoicesCompanion(
       id: id ?? this.id,
@@ -683,7 +637,6 @@ class InvoicesCompanion extends UpdateCompanion<InvoiceRow> {
       totalAmount: totalAmount ?? this.totalAmount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      syncedAt: syncedAt ?? this.syncedAt,
     );
   }
 
@@ -726,9 +679,6 @@ class InvoicesCompanion extends UpdateCompanion<InvoiceRow> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
-    if (syncedAt.present) {
-      map['synced_at'] = Variable<DateTime>(syncedAt.value);
-    }
     return map;
   }
 
@@ -746,8 +696,7 @@ class InvoicesCompanion extends UpdateCompanion<InvoiceRow> {
           ..write('totalWaterWeight: $totalWaterWeight, ')
           ..write('totalAmount: $totalAmount, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('syncedAt: $syncedAt')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -870,17 +819,6 @@ class $InvoiceLinesTable extends InvoiceLines
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _syncedAtMeta = const VerificationMeta(
-    'syncedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> syncedAt = GeneratedColumn<DateTime>(
-    'synced_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -893,7 +831,6 @@ class $InvoiceLinesTable extends InvoiceLines
     carat,
     unitPrice,
     amount,
-    syncedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -988,12 +925,6 @@ class $InvoiceLinesTable extends InvoiceLines
     } else if (isInserting) {
       context.missing(_amountMeta);
     }
-    if (data.containsKey('synced_at')) {
-      context.handle(
-        _syncedAtMeta,
-        syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta),
-      );
-    }
     return context;
   }
 
@@ -1043,10 +974,6 @@ class $InvoiceLinesTable extends InvoiceLines
         DriftSqlType.double,
         data['${effectivePrefix}amount'],
       )!,
-      syncedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}synced_at'],
-      ),
     );
   }
 
@@ -1071,7 +998,6 @@ class InvoiceLineRow extends DataClass implements Insertable<InvoiceLineRow> {
   final double carat;
   final double unitPrice;
   final double amount;
-  final DateTime? syncedAt;
   const InvoiceLineRow({
     required this.id,
     required this.invoiceId,
@@ -1083,7 +1009,6 @@ class InvoiceLineRow extends DataClass implements Insertable<InvoiceLineRow> {
     required this.carat,
     required this.unitPrice,
     required this.amount,
-    this.syncedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1098,9 +1023,6 @@ class InvoiceLineRow extends DataClass implements Insertable<InvoiceLineRow> {
     map['carat'] = Variable<double>(carat);
     map['unit_price'] = Variable<double>(unitPrice);
     map['amount'] = Variable<double>(amount);
-    if (!nullToAbsent || syncedAt != null) {
-      map['synced_at'] = Variable<DateTime>(syncedAt);
-    }
     return map;
   }
 
@@ -1116,9 +1038,6 @@ class InvoiceLineRow extends DataClass implements Insertable<InvoiceLineRow> {
       carat: Value(carat),
       unitPrice: Value(unitPrice),
       amount: Value(amount),
-      syncedAt: syncedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(syncedAt),
     );
   }
 
@@ -1138,7 +1057,6 @@ class InvoiceLineRow extends DataClass implements Insertable<InvoiceLineRow> {
       carat: serializer.fromJson<double>(json['carat']),
       unitPrice: serializer.fromJson<double>(json['unitPrice']),
       amount: serializer.fromJson<double>(json['amount']),
-      syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
     );
   }
   @override
@@ -1155,7 +1073,6 @@ class InvoiceLineRow extends DataClass implements Insertable<InvoiceLineRow> {
       'carat': serializer.toJson<double>(carat),
       'unitPrice': serializer.toJson<double>(unitPrice),
       'amount': serializer.toJson<double>(amount),
-      'syncedAt': serializer.toJson<DateTime?>(syncedAt),
     };
   }
 
@@ -1170,7 +1087,6 @@ class InvoiceLineRow extends DataClass implements Insertable<InvoiceLineRow> {
     double? carat,
     double? unitPrice,
     double? amount,
-    Value<DateTime?> syncedAt = const Value.absent(),
   }) => InvoiceLineRow(
     id: id ?? this.id,
     invoiceId: invoiceId ?? this.invoiceId,
@@ -1182,7 +1098,6 @@ class InvoiceLineRow extends DataClass implements Insertable<InvoiceLineRow> {
     carat: carat ?? this.carat,
     unitPrice: unitPrice ?? this.unitPrice,
     amount: amount ?? this.amount,
-    syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
   );
   InvoiceLineRow copyWithCompanion(InvoiceLinesCompanion data) {
     return InvoiceLineRow(
@@ -1200,7 +1115,6 @@ class InvoiceLineRow extends DataClass implements Insertable<InvoiceLineRow> {
       carat: data.carat.present ? data.carat.value : this.carat,
       unitPrice: data.unitPrice.present ? data.unitPrice.value : this.unitPrice,
       amount: data.amount.present ? data.amount.value : this.amount,
-      syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
     );
   }
 
@@ -1216,8 +1130,7 @@ class InvoiceLineRow extends DataClass implements Insertable<InvoiceLineRow> {
           ..write('density: $density, ')
           ..write('carat: $carat, ')
           ..write('unitPrice: $unitPrice, ')
-          ..write('amount: $amount, ')
-          ..write('syncedAt: $syncedAt')
+          ..write('amount: $amount')
           ..write(')'))
         .toString();
   }
@@ -1234,7 +1147,6 @@ class InvoiceLineRow extends DataClass implements Insertable<InvoiceLineRow> {
     carat,
     unitPrice,
     amount,
-    syncedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -1249,8 +1161,7 @@ class InvoiceLineRow extends DataClass implements Insertable<InvoiceLineRow> {
           other.density == this.density &&
           other.carat == this.carat &&
           other.unitPrice == this.unitPrice &&
-          other.amount == this.amount &&
-          other.syncedAt == this.syncedAt);
+          other.amount == this.amount);
 }
 
 class InvoiceLinesCompanion extends UpdateCompanion<InvoiceLineRow> {
@@ -1264,7 +1175,6 @@ class InvoiceLinesCompanion extends UpdateCompanion<InvoiceLineRow> {
   final Value<double> carat;
   final Value<double> unitPrice;
   final Value<double> amount;
-  final Value<DateTime?> syncedAt;
   const InvoiceLinesCompanion({
     this.id = const Value.absent(),
     this.invoiceId = const Value.absent(),
@@ -1276,7 +1186,6 @@ class InvoiceLinesCompanion extends UpdateCompanion<InvoiceLineRow> {
     this.carat = const Value.absent(),
     this.unitPrice = const Value.absent(),
     this.amount = const Value.absent(),
-    this.syncedAt = const Value.absent(),
   });
   InvoiceLinesCompanion.insert({
     this.id = const Value.absent(),
@@ -1289,7 +1198,6 @@ class InvoiceLinesCompanion extends UpdateCompanion<InvoiceLineRow> {
     required double carat,
     required double unitPrice,
     required double amount,
-    this.syncedAt = const Value.absent(),
   }) : invoiceId = Value(invoiceId),
        barNumber = Value(barNumber),
        basePrice = Value(basePrice),
@@ -1310,7 +1218,6 @@ class InvoiceLinesCompanion extends UpdateCompanion<InvoiceLineRow> {
     Expression<double>? carat,
     Expression<double>? unitPrice,
     Expression<double>? amount,
-    Expression<DateTime>? syncedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1323,7 +1230,6 @@ class InvoiceLinesCompanion extends UpdateCompanion<InvoiceLineRow> {
       if (carat != null) 'carat': carat,
       if (unitPrice != null) 'unit_price': unitPrice,
       if (amount != null) 'amount': amount,
-      if (syncedAt != null) 'synced_at': syncedAt,
     });
   }
 
@@ -1338,7 +1244,6 @@ class InvoiceLinesCompanion extends UpdateCompanion<InvoiceLineRow> {
     Value<double>? carat,
     Value<double>? unitPrice,
     Value<double>? amount,
-    Value<DateTime?>? syncedAt,
   }) {
     return InvoiceLinesCompanion(
       id: id ?? this.id,
@@ -1351,7 +1256,6 @@ class InvoiceLinesCompanion extends UpdateCompanion<InvoiceLineRow> {
       carat: carat ?? this.carat,
       unitPrice: unitPrice ?? this.unitPrice,
       amount: amount ?? this.amount,
-      syncedAt: syncedAt ?? this.syncedAt,
     );
   }
 
@@ -1388,9 +1292,6 @@ class InvoiceLinesCompanion extends UpdateCompanion<InvoiceLineRow> {
     if (amount.present) {
       map['amount'] = Variable<double>(amount.value);
     }
-    if (syncedAt.present) {
-      map['synced_at'] = Variable<DateTime>(syncedAt.value);
-    }
     return map;
   }
 
@@ -1406,476 +1307,7 @@ class InvoiceLinesCompanion extends UpdateCompanion<InvoiceLineRow> {
           ..write('density: $density, ')
           ..write('carat: $carat, ')
           ..write('unitPrice: $unitPrice, ')
-          ..write('amount: $amount, ')
-          ..write('syncedAt: $syncedAt')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $SyncQueueTable extends SyncQueue
-    with TableInfo<$SyncQueueTable, SyncQueueRow> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $SyncQueueTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-    'id',
-    aliasedName,
-    false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
-  );
-  static const VerificationMeta _targetTableMeta = const VerificationMeta(
-    'targetTable',
-  );
-  @override
-  late final GeneratedColumn<String> targetTable = GeneratedColumn<String>(
-    'table_name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _operationMeta = const VerificationMeta(
-    'operation',
-  );
-  @override
-  late final GeneratedColumn<String> operation = GeneratedColumn<String>(
-    'operation',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _recordIdMeta = const VerificationMeta(
-    'recordId',
-  );
-  @override
-  late final GeneratedColumn<String> recordId = GeneratedColumn<String>(
-    'record_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _payloadMeta = const VerificationMeta(
-    'payload',
-  );
-  @override
-  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
-    'payload',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _attemptsMeta = const VerificationMeta(
-    'attempts',
-  );
-  @override
-  late final GeneratedColumn<int> attempts = GeneratedColumn<int>(
-    'attempts',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    targetTable,
-    operation,
-    recordId,
-    payload,
-    attempts,
-    createdAt,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'sync_queue';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<SyncQueueRow> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('table_name')) {
-      context.handle(
-        _targetTableMeta,
-        targetTable.isAcceptableOrUnknown(
-          data['table_name']!,
-          _targetTableMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_targetTableMeta);
-    }
-    if (data.containsKey('operation')) {
-      context.handle(
-        _operationMeta,
-        operation.isAcceptableOrUnknown(data['operation']!, _operationMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_operationMeta);
-    }
-    if (data.containsKey('record_id')) {
-      context.handle(
-        _recordIdMeta,
-        recordId.isAcceptableOrUnknown(data['record_id']!, _recordIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_recordIdMeta);
-    }
-    if (data.containsKey('payload')) {
-      context.handle(
-        _payloadMeta,
-        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_payloadMeta);
-    }
-    if (data.containsKey('attempts')) {
-      context.handle(
-        _attemptsMeta,
-        attempts.isAcceptableOrUnknown(data['attempts']!, _attemptsMeta),
-      );
-    }
-    if (data.containsKey('created_at')) {
-      context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  SyncQueueRow map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return SyncQueueRow(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}id'],
-      )!,
-      targetTable: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}table_name'],
-      )!,
-      operation: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}operation'],
-      )!,
-      recordId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}record_id'],
-      )!,
-      payload: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}payload'],
-      )!,
-      attempts: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}attempts'],
-      )!,
-      createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}created_at'],
-      )!,
-    );
-  }
-
-  @override
-  $SyncQueueTable createAlias(String alias) {
-    return $SyncQueueTable(attachedDatabase, alias);
-  }
-}
-
-class SyncQueueRow extends DataClass implements Insertable<SyncQueueRow> {
-  final int id;
-
-  /// Remote table to write to: 'invoices' | 'invoice_lines'.
-  ///
-  /// Named `targetTable` in Dart because drift's `Table` already defines
-  /// a `tableName` member; the SQL column stays `table_name`.
-  final String targetTable;
-
-  /// CREATE | UPDATE | DELETE.
-  final String operation;
-
-  /// Local record id, as text for forward compatibility.
-  final String recordId;
-
-  /// JSON snapshot of the record at enqueue time.
-  final String payload;
-
-  /// Failed push attempts — abandoned after BusinessConstants.maxSyncAttempts.
-  final int attempts;
-  final DateTime createdAt;
-  const SyncQueueRow({
-    required this.id,
-    required this.targetTable,
-    required this.operation,
-    required this.recordId,
-    required this.payload,
-    required this.attempts,
-    required this.createdAt,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
-    map['table_name'] = Variable<String>(targetTable);
-    map['operation'] = Variable<String>(operation);
-    map['record_id'] = Variable<String>(recordId);
-    map['payload'] = Variable<String>(payload);
-    map['attempts'] = Variable<int>(attempts);
-    map['created_at'] = Variable<DateTime>(createdAt);
-    return map;
-  }
-
-  SyncQueueCompanion toCompanion(bool nullToAbsent) {
-    return SyncQueueCompanion(
-      id: Value(id),
-      targetTable: Value(targetTable),
-      operation: Value(operation),
-      recordId: Value(recordId),
-      payload: Value(payload),
-      attempts: Value(attempts),
-      createdAt: Value(createdAt),
-    );
-  }
-
-  factory SyncQueueRow.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return SyncQueueRow(
-      id: serializer.fromJson<int>(json['id']),
-      targetTable: serializer.fromJson<String>(json['targetTable']),
-      operation: serializer.fromJson<String>(json['operation']),
-      recordId: serializer.fromJson<String>(json['recordId']),
-      payload: serializer.fromJson<String>(json['payload']),
-      attempts: serializer.fromJson<int>(json['attempts']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'targetTable': serializer.toJson<String>(targetTable),
-      'operation': serializer.toJson<String>(operation),
-      'recordId': serializer.toJson<String>(recordId),
-      'payload': serializer.toJson<String>(payload),
-      'attempts': serializer.toJson<int>(attempts),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-    };
-  }
-
-  SyncQueueRow copyWith({
-    int? id,
-    String? targetTable,
-    String? operation,
-    String? recordId,
-    String? payload,
-    int? attempts,
-    DateTime? createdAt,
-  }) => SyncQueueRow(
-    id: id ?? this.id,
-    targetTable: targetTable ?? this.targetTable,
-    operation: operation ?? this.operation,
-    recordId: recordId ?? this.recordId,
-    payload: payload ?? this.payload,
-    attempts: attempts ?? this.attempts,
-    createdAt: createdAt ?? this.createdAt,
-  );
-  SyncQueueRow copyWithCompanion(SyncQueueCompanion data) {
-    return SyncQueueRow(
-      id: data.id.present ? data.id.value : this.id,
-      targetTable: data.targetTable.present
-          ? data.targetTable.value
-          : this.targetTable,
-      operation: data.operation.present ? data.operation.value : this.operation,
-      recordId: data.recordId.present ? data.recordId.value : this.recordId,
-      payload: data.payload.present ? data.payload.value : this.payload,
-      attempts: data.attempts.present ? data.attempts.value : this.attempts,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('SyncQueueRow(')
-          ..write('id: $id, ')
-          ..write('targetTable: $targetTable, ')
-          ..write('operation: $operation, ')
-          ..write('recordId: $recordId, ')
-          ..write('payload: $payload, ')
-          ..write('attempts: $attempts, ')
-          ..write('createdAt: $createdAt')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    targetTable,
-    operation,
-    recordId,
-    payload,
-    attempts,
-    createdAt,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is SyncQueueRow &&
-          other.id == this.id &&
-          other.targetTable == this.targetTable &&
-          other.operation == this.operation &&
-          other.recordId == this.recordId &&
-          other.payload == this.payload &&
-          other.attempts == this.attempts &&
-          other.createdAt == this.createdAt);
-}
-
-class SyncQueueCompanion extends UpdateCompanion<SyncQueueRow> {
-  final Value<int> id;
-  final Value<String> targetTable;
-  final Value<String> operation;
-  final Value<String> recordId;
-  final Value<String> payload;
-  final Value<int> attempts;
-  final Value<DateTime> createdAt;
-  const SyncQueueCompanion({
-    this.id = const Value.absent(),
-    this.targetTable = const Value.absent(),
-    this.operation = const Value.absent(),
-    this.recordId = const Value.absent(),
-    this.payload = const Value.absent(),
-    this.attempts = const Value.absent(),
-    this.createdAt = const Value.absent(),
-  });
-  SyncQueueCompanion.insert({
-    this.id = const Value.absent(),
-    required String targetTable,
-    required String operation,
-    required String recordId,
-    required String payload,
-    this.attempts = const Value.absent(),
-    this.createdAt = const Value.absent(),
-  }) : targetTable = Value(targetTable),
-       operation = Value(operation),
-       recordId = Value(recordId),
-       payload = Value(payload);
-  static Insertable<SyncQueueRow> custom({
-    Expression<int>? id,
-    Expression<String>? targetTable,
-    Expression<String>? operation,
-    Expression<String>? recordId,
-    Expression<String>? payload,
-    Expression<int>? attempts,
-    Expression<DateTime>? createdAt,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (targetTable != null) 'table_name': targetTable,
-      if (operation != null) 'operation': operation,
-      if (recordId != null) 'record_id': recordId,
-      if (payload != null) 'payload': payload,
-      if (attempts != null) 'attempts': attempts,
-      if (createdAt != null) 'created_at': createdAt,
-    });
-  }
-
-  SyncQueueCompanion copyWith({
-    Value<int>? id,
-    Value<String>? targetTable,
-    Value<String>? operation,
-    Value<String>? recordId,
-    Value<String>? payload,
-    Value<int>? attempts,
-    Value<DateTime>? createdAt,
-  }) {
-    return SyncQueueCompanion(
-      id: id ?? this.id,
-      targetTable: targetTable ?? this.targetTable,
-      operation: operation ?? this.operation,
-      recordId: recordId ?? this.recordId,
-      payload: payload ?? this.payload,
-      attempts: attempts ?? this.attempts,
-      createdAt: createdAt ?? this.createdAt,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
-    }
-    if (targetTable.present) {
-      map['table_name'] = Variable<String>(targetTable.value);
-    }
-    if (operation.present) {
-      map['operation'] = Variable<String>(operation.value);
-    }
-    if (recordId.present) {
-      map['record_id'] = Variable<String>(recordId.value);
-    }
-    if (payload.present) {
-      map['payload'] = Variable<String>(payload.value);
-    }
-    if (attempts.present) {
-      map['attempts'] = Variable<int>(attempts.value);
-    }
-    if (createdAt.present) {
-      map['created_at'] = Variable<DateTime>(createdAt.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('SyncQueueCompanion(')
-          ..write('id: $id, ')
-          ..write('targetTable: $targetTable, ')
-          ..write('operation: $operation, ')
-          ..write('recordId: $recordId, ')
-          ..write('payload: $payload, ')
-          ..write('attempts: $attempts, ')
-          ..write('createdAt: $createdAt')
+          ..write('amount: $amount')
           ..write(')'))
         .toString();
   }
@@ -1886,21 +1318,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $InvoicesTable invoices = $InvoicesTable(this);
   late final $InvoiceLinesTable invoiceLines = $InvoiceLinesTable(this);
-  late final $SyncQueueTable syncQueue = $SyncQueueTable(this);
   late final InvoiceDao invoiceDao = InvoiceDao(this as AppDatabase);
   late final InvoiceLineDao invoiceLineDao = InvoiceLineDao(
     this as AppDatabase,
   );
-  late final SyncQueueDao syncQueueDao = SyncQueueDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [
-    invoices,
-    invoiceLines,
-    syncQueue,
-  ];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [invoices, invoiceLines];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
     WritePropagation(
@@ -1927,7 +1353,6 @@ typedef $$InvoicesTableCreateCompanionBuilder =
       Value<double> totalAmount,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
-      Value<DateTime?> syncedAt,
     });
 typedef $$InvoicesTableUpdateCompanionBuilder =
     InvoicesCompanion Function({
@@ -1943,7 +1368,6 @@ typedef $$InvoicesTableUpdateCompanionBuilder =
       Value<double> totalAmount,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
-      Value<DateTime?> syncedAt,
     });
 
 final class $$InvoicesTableReferences
@@ -2035,11 +1459,6 @@ class $$InvoicesTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get syncedAt => $composableBuilder(
-    column: $table.syncedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2137,11 +1556,6 @@ class $$InvoicesTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
-
-  ColumnOrderings<DateTime> get syncedAt => $composableBuilder(
-    column: $table.syncedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
 }
 
 class $$InvoicesTableAnnotationComposer
@@ -2196,9 +1610,6 @@ class $$InvoicesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get syncedAt =>
-      $composableBuilder(column: $table.syncedAt, builder: (column) => column);
 
   Expression<T> invoiceLinesRefs<T extends Object>(
     Expression<T> Function($$InvoiceLinesTableAnnotationComposer a) f,
@@ -2266,7 +1677,6 @@ class $$InvoicesTableTableManager
                 Value<double> totalAmount = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> syncedAt = const Value.absent(),
               }) => InvoicesCompanion(
                 id: id,
                 invoiceNumber: invoiceNumber,
@@ -2280,7 +1690,6 @@ class $$InvoicesTableTableManager
                 totalAmount: totalAmount,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
-                syncedAt: syncedAt,
               ),
           createCompanionCallback:
               ({
@@ -2296,7 +1705,6 @@ class $$InvoicesTableTableManager
                 Value<double> totalAmount = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> syncedAt = const Value.absent(),
               }) => InvoicesCompanion.insert(
                 id: id,
                 invoiceNumber: invoiceNumber,
@@ -2310,7 +1718,6 @@ class $$InvoicesTableTableManager
                 totalAmount: totalAmount,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
-                syncedAt: syncedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -2379,7 +1786,6 @@ typedef $$InvoiceLinesTableCreateCompanionBuilder =
       required double carat,
       required double unitPrice,
       required double amount,
-      Value<DateTime?> syncedAt,
     });
 typedef $$InvoiceLinesTableUpdateCompanionBuilder =
     InvoiceLinesCompanion Function({
@@ -2393,7 +1799,6 @@ typedef $$InvoiceLinesTableUpdateCompanionBuilder =
       Value<double> carat,
       Value<double> unitPrice,
       Value<double> amount,
-      Value<DateTime?> syncedAt,
     });
 
 final class $$InvoiceLinesTableReferences
@@ -2469,11 +1874,6 @@ class $$InvoiceLinesTableFilterComposer
 
   ColumnFilters<double> get amount => $composableBuilder(
     column: $table.amount,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get syncedAt => $composableBuilder(
-    column: $table.syncedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2555,11 +1955,6 @@ class $$InvoiceLinesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<DateTime> get syncedAt => $composableBuilder(
-    column: $table.syncedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   $$InvoicesTableOrderingComposer get invoiceId {
     final $$InvoicesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -2624,9 +2019,6 @@ class $$InvoiceLinesTableAnnotationComposer
   GeneratedColumn<double> get amount =>
       $composableBuilder(column: $table.amount, builder: (column) => column);
 
-  GeneratedColumn<DateTime> get syncedAt =>
-      $composableBuilder(column: $table.syncedAt, builder: (column) => column);
-
   $$InvoicesTableAnnotationComposer get invoiceId {
     final $$InvoicesTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -2689,7 +2081,6 @@ class $$InvoiceLinesTableTableManager
                 Value<double> carat = const Value.absent(),
                 Value<double> unitPrice = const Value.absent(),
                 Value<double> amount = const Value.absent(),
-                Value<DateTime?> syncedAt = const Value.absent(),
               }) => InvoiceLinesCompanion(
                 id: id,
                 invoiceId: invoiceId,
@@ -2701,7 +2092,6 @@ class $$InvoiceLinesTableTableManager
                 carat: carat,
                 unitPrice: unitPrice,
                 amount: amount,
-                syncedAt: syncedAt,
               ),
           createCompanionCallback:
               ({
@@ -2715,7 +2105,6 @@ class $$InvoiceLinesTableTableManager
                 required double carat,
                 required double unitPrice,
                 required double amount,
-                Value<DateTime?> syncedAt = const Value.absent(),
               }) => InvoiceLinesCompanion.insert(
                 id: id,
                 invoiceId: invoiceId,
@@ -2727,7 +2116,6 @@ class $$InvoiceLinesTableTableManager
                 carat: carat,
                 unitPrice: unitPrice,
                 amount: amount,
-                syncedAt: syncedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -2796,240 +2184,6 @@ typedef $$InvoiceLinesTableProcessedTableManager =
       InvoiceLineRow,
       PrefetchHooks Function({bool invoiceId})
     >;
-typedef $$SyncQueueTableCreateCompanionBuilder =
-    SyncQueueCompanion Function({
-      Value<int> id,
-      required String targetTable,
-      required String operation,
-      required String recordId,
-      required String payload,
-      Value<int> attempts,
-      Value<DateTime> createdAt,
-    });
-typedef $$SyncQueueTableUpdateCompanionBuilder =
-    SyncQueueCompanion Function({
-      Value<int> id,
-      Value<String> targetTable,
-      Value<String> operation,
-      Value<String> recordId,
-      Value<String> payload,
-      Value<int> attempts,
-      Value<DateTime> createdAt,
-    });
-
-class $$SyncQueueTableFilterComposer
-    extends Composer<_$AppDatabase, $SyncQueueTable> {
-  $$SyncQueueTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get targetTable => $composableBuilder(
-    column: $table.targetTable,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get operation => $composableBuilder(
-    column: $table.operation,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get recordId => $composableBuilder(
-    column: $table.recordId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get payload => $composableBuilder(
-    column: $table.payload,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get attempts => $composableBuilder(
-    column: $table.attempts,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $$SyncQueueTableOrderingComposer
-    extends Composer<_$AppDatabase, $SyncQueueTable> {
-  $$SyncQueueTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get targetTable => $composableBuilder(
-    column: $table.targetTable,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get operation => $composableBuilder(
-    column: $table.operation,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get recordId => $composableBuilder(
-    column: $table.recordId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get payload => $composableBuilder(
-    column: $table.payload,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get attempts => $composableBuilder(
-    column: $table.attempts,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$SyncQueueTableAnnotationComposer
-    extends Composer<_$AppDatabase, $SyncQueueTable> {
-  $$SyncQueueTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<int> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get targetTable => $composableBuilder(
-    column: $table.targetTable,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get operation =>
-      $composableBuilder(column: $table.operation, builder: (column) => column);
-
-  GeneratedColumn<String> get recordId =>
-      $composableBuilder(column: $table.recordId, builder: (column) => column);
-
-  GeneratedColumn<String> get payload =>
-      $composableBuilder(column: $table.payload, builder: (column) => column);
-
-  GeneratedColumn<int> get attempts =>
-      $composableBuilder(column: $table.attempts, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-}
-
-class $$SyncQueueTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $SyncQueueTable,
-          SyncQueueRow,
-          $$SyncQueueTableFilterComposer,
-          $$SyncQueueTableOrderingComposer,
-          $$SyncQueueTableAnnotationComposer,
-          $$SyncQueueTableCreateCompanionBuilder,
-          $$SyncQueueTableUpdateCompanionBuilder,
-          (
-            SyncQueueRow,
-            BaseReferences<_$AppDatabase, $SyncQueueTable, SyncQueueRow>,
-          ),
-          SyncQueueRow,
-          PrefetchHooks Function()
-        > {
-  $$SyncQueueTableTableManager(_$AppDatabase db, $SyncQueueTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$SyncQueueTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$SyncQueueTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$SyncQueueTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<int> id = const Value.absent(),
-                Value<String> targetTable = const Value.absent(),
-                Value<String> operation = const Value.absent(),
-                Value<String> recordId = const Value.absent(),
-                Value<String> payload = const Value.absent(),
-                Value<int> attempts = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-              }) => SyncQueueCompanion(
-                id: id,
-                targetTable: targetTable,
-                operation: operation,
-                recordId: recordId,
-                payload: payload,
-                attempts: attempts,
-                createdAt: createdAt,
-              ),
-          createCompanionCallback:
-              ({
-                Value<int> id = const Value.absent(),
-                required String targetTable,
-                required String operation,
-                required String recordId,
-                required String payload,
-                Value<int> attempts = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-              }) => SyncQueueCompanion.insert(
-                id: id,
-                targetTable: targetTable,
-                operation: operation,
-                recordId: recordId,
-                payload: payload,
-                attempts: attempts,
-                createdAt: createdAt,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $$SyncQueueTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $SyncQueueTable,
-      SyncQueueRow,
-      $$SyncQueueTableFilterComposer,
-      $$SyncQueueTableOrderingComposer,
-      $$SyncQueueTableAnnotationComposer,
-      $$SyncQueueTableCreateCompanionBuilder,
-      $$SyncQueueTableUpdateCompanionBuilder,
-      (
-        SyncQueueRow,
-        BaseReferences<_$AppDatabase, $SyncQueueTable, SyncQueueRow>,
-      ),
-      SyncQueueRow,
-      PrefetchHooks Function()
-    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3038,6 +2192,4 @@ class $AppDatabaseManager {
       $$InvoicesTableTableManager(_db, _db.invoices);
   $$InvoiceLinesTableTableManager get invoiceLines =>
       $$InvoiceLinesTableTableManager(_db, _db.invoiceLines);
-  $$SyncQueueTableTableManager get syncQueue =>
-      $$SyncQueueTableTableManager(_db, _db.syncQueue);
 }

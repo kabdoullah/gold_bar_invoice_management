@@ -1,0 +1,38 @@
+{
+  "project_info": {
+    "project_number": "833854972385",
+    "project_id": "goldinvoicesapp",
+    "storage_bucket": ""
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:833854972385:android:0000000000000000",
+        "android_client_info": {
+          "package_name": "com.kemogoha.goldinvoices"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "833854972385-1pq3th38qkft9lnm5o2jjvif7g3jktuv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kemogoha.goldinvoices",
+            "certificate_hash": "6b8a6224a8a7d3e0919c30360c7dee5928eb65e0"
+          }
+        },
+        {
+          "client_id": "833854972385-n4p30ffkidfgnhut5de9nm63u0a5n01o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": ""
+        }
+      ],
+      "services": {}
+    }
+  ],
+  "configuration_version": "1"
+}

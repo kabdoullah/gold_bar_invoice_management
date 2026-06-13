@@ -100,41 +100,4 @@ void main() {
       expect(lines.map((l) => l.barNumber), [1, 2]);
     });
   });
-
-  group('SyncQueueDao', () {
-    SyncQueueCompanion op(String recordId) => SyncQueueCompanion.insert(
-          targetTable: 'invoices',
-          operation: 'CREATE',
-          recordId: recordId,
-          payload: '{}',
-        );
-
-    test('getPending excludes ops with 3+ attempts, oldest first', () async {
-      final id1 = await db.syncQueueDao.enqueue(op('1'));
-      await db.syncQueueDao.enqueue(op('2'));
-
-      for (var i = 0; i < 3; i++) {
-        await db.syncQueueDao.incrementAttempts(id1);
-      }
-
-      final pending = await db.syncQueueDao.getPending();
-      expect(pending.map((o) => o.recordId), ['2']);
-    });
-
-    test('markDone removes the row; counts reflect state', () async {
-      final id1 = await db.syncQueueDao.enqueue(op('1'));
-      final id2 = await db.syncQueueDao.enqueue(op('2'));
-
-      expect(await db.syncQueueDao.watchPendingCount().first, 2);
-
-      await db.syncQueueDao.markDone(id1);
-      expect(await db.syncQueueDao.watchPendingCount().first, 1);
-
-      for (var i = 0; i < 3; i++) {
-        await db.syncQueueDao.incrementAttempts(id2);
-      }
-      expect(await db.syncQueueDao.watchPendingCount().first, 0);
-      expect(await db.syncQueueDao.watchFailedCount().first, 1);
-    });
-  });
 }

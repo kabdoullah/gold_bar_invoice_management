@@ -19,24 +19,7 @@ extension InvoiceRowMapper on InvoiceRow {
         totalAmount: totalAmount,
         createdAt: createdAt,
         updatedAt: updatedAt,
-        syncedAt: syncedAt,
       );
-
-  /// JSON payload for the sync queue / Supabase.
-  Map<String, dynamic> toSyncJson() => {
-        'id': id,
-        'invoice_number': invoiceNumber,
-        'issue_date': issueDate.toIso8601String(),
-        'location': location,
-        'base_price': basePrice,
-        'status': status,
-        'bar_count': barCount,
-        'total_gross_weight': totalGrossWeight,
-        'total_water_weight': totalWaterWeight,
-        'total_amount': totalAmount,
-        'created_at': createdAt.toIso8601String(),
-        'updated_at': updatedAt.toIso8601String(),
-      };
 }
 
 extension InvoiceLineRowMapper on InvoiceLineRow {
@@ -51,19 +34,5 @@ extension InvoiceLineRowMapper on InvoiceLineRow {
         carat: carat,
         unitPrice: unitPrice,
         amount: amount,
-        syncedAt: syncedAt,
       );
-
-  Map<String, dynamic> toSyncJson() => {
-        'id': id,
-        'invoice_id': invoiceId,
-        'bar_number': barNumber,
-        'base_price': basePrice,
-        'gross_weight': grossWeight,
-        'water_weight': waterWeight,
-        'density': density,
-        'carat': carat,
-        'unit_price': unitPrice,
-        'amount': amount,
-      };
 }

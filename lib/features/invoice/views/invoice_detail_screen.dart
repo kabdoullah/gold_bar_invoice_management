@@ -5,12 +5,12 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/number_formatter.dart';
 import '../../../domain/entities/invoice.dart';
 import '../../../domain/repositories/i_invoice_repository.dart';
+import '../../../domain/services/backup_service.dart';
 import '../../../domain/services/gold_bar_calculator_service.dart';
 import '../../../domain/services/print_service.dart';
 import '../viewmodels/invoice_detail_viewmodel.dart';
 import '../widgets/invoice_table.dart';
 import '../widgets/save_and_print_button.dart';
-import '../widgets/sync_status_chip.dart';
 import '../widgets/totals_widget.dart';
 import 'invoice_line_form_sheet.dart';
 
@@ -28,7 +28,8 @@ class InvoiceDetailScreen extends StatelessWidget {
         context.read<IInvoiceRepository>(),
         context.read<GoldBarCalculatorService>(),
         context.read<PrintService>(),
-        invoiceId: invoiceId,
+        invoiceId:     invoiceId,
+        backupService: context.read<BackupService>(),
       ),
       child: const _InvoiceDetailView(),
     );
@@ -66,20 +67,19 @@ class _InvoiceDetailView extends StatelessWidget {
         title: Text(invoice.invoiceNumber),
         actions: [
           if (invoice.isDraft)
-            const Center(
-              child: Text(
-                'BROUILLON',
-                style: TextStyle(
-                  color: AppColors.draftWarning,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
+            const Padding(
+              padding: EdgeInsets.only(right: 12),
+              child: Center(
+                child: Text(
+                  'BROUILLON',
+                  style: TextStyle(
+                    color: AppColors.draftWarning,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ),
-          const Padding(
-            padding: EdgeInsets.only(left: 8, right: 12),
-            child: Center(child: SyncStatusChip()),
-          ),
         ],
       ),
       floatingActionButton: invoice.isDraft

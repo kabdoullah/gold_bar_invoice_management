@@ -22,7 +22,7 @@ mixin _$InvoiceLine {
  double get density;/// Gold purity, derived from density. Always displayed in red.
  double get carat;/// Price per gram for this bar ("U/BASE").
  double get unitPrice;/// Line total: unitPrice × grossWeight ("Montant").
- double get amount; DateTime? get syncedAt;
+ double get amount;
 /// Create a copy of InvoiceLine
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -33,16 +33,16 @@ $InvoiceLineCopyWith<InvoiceLine> get copyWith => _$InvoiceLineCopyWithImpl<Invo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvoiceLine&&(identical(other.id, id) || other.id == id)&&(identical(other.invoiceId, invoiceId) || other.invoiceId == invoiceId)&&(identical(other.barNumber, barNumber) || other.barNumber == barNumber)&&(identical(other.basePrice, basePrice) || other.basePrice == basePrice)&&(identical(other.grossWeight, grossWeight) || other.grossWeight == grossWeight)&&(identical(other.waterWeight, waterWeight) || other.waterWeight == waterWeight)&&(identical(other.density, density) || other.density == density)&&(identical(other.carat, carat) || other.carat == carat)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.syncedAt, syncedAt) || other.syncedAt == syncedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InvoiceLine&&(identical(other.id, id) || other.id == id)&&(identical(other.invoiceId, invoiceId) || other.invoiceId == invoiceId)&&(identical(other.barNumber, barNumber) || other.barNumber == barNumber)&&(identical(other.basePrice, basePrice) || other.basePrice == basePrice)&&(identical(other.grossWeight, grossWeight) || other.grossWeight == grossWeight)&&(identical(other.waterWeight, waterWeight) || other.waterWeight == waterWeight)&&(identical(other.density, density) || other.density == density)&&(identical(other.carat, carat) || other.carat == carat)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.amount, amount) || other.amount == amount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,invoiceId,barNumber,basePrice,grossWeight,waterWeight,density,carat,unitPrice,amount,syncedAt);
+int get hashCode => Object.hash(runtimeType,id,invoiceId,barNumber,basePrice,grossWeight,waterWeight,density,carat,unitPrice,amount);
 
 @override
 String toString() {
-  return 'InvoiceLine(id: $id, invoiceId: $invoiceId, barNumber: $barNumber, basePrice: $basePrice, grossWeight: $grossWeight, waterWeight: $waterWeight, density: $density, carat: $carat, unitPrice: $unitPrice, amount: $amount, syncedAt: $syncedAt)';
+  return 'InvoiceLine(id: $id, invoiceId: $invoiceId, barNumber: $barNumber, basePrice: $basePrice, grossWeight: $grossWeight, waterWeight: $waterWeight, density: $density, carat: $carat, unitPrice: $unitPrice, amount: $amount)';
 }
 
 
@@ -53,7 +53,7 @@ abstract mixin class $InvoiceLineCopyWith<$Res>  {
   factory $InvoiceLineCopyWith(InvoiceLine value, $Res Function(InvoiceLine) _then) = _$InvoiceLineCopyWithImpl;
 @useResult
 $Res call({
- int id, int invoiceId, int barNumber, double basePrice, double grossWeight, double waterWeight, double density, double carat, double unitPrice, double amount, DateTime? syncedAt
+ int id, int invoiceId, int barNumber, double basePrice, double grossWeight, double waterWeight, double density, double carat, double unitPrice, double amount
 });
 
 
@@ -70,7 +70,7 @@ class _$InvoiceLineCopyWithImpl<$Res>
 
 /// Create a copy of InvoiceLine
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? invoiceId = null,Object? barNumber = null,Object? basePrice = null,Object? grossWeight = null,Object? waterWeight = null,Object? density = null,Object? carat = null,Object? unitPrice = null,Object? amount = null,Object? syncedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? invoiceId = null,Object? barNumber = null,Object? basePrice = null,Object? grossWeight = null,Object? waterWeight = null,Object? density = null,Object? carat = null,Object? unitPrice = null,Object? amount = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,invoiceId: null == invoiceId ? _self.invoiceId : invoiceId // ignore: cast_nullable_to_non_nullable
@@ -82,8 +82,7 @@ as double,density: null == density ? _self.density : density // ignore: cast_nul
 as double,carat: null == carat ? _self.carat : carat // ignore: cast_nullable_to_non_nullable
 as double,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as double,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
-as double,syncedAt: freezed == syncedAt ? _self.syncedAt : syncedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as double,
   ));
 }
 
@@ -168,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  int invoiceId,  int barNumber,  double basePrice,  double grossWeight,  double waterWeight,  double density,  double carat,  double unitPrice,  double amount,  DateTime? syncedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  int invoiceId,  int barNumber,  double basePrice,  double grossWeight,  double waterWeight,  double density,  double carat,  double unitPrice,  double amount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _InvoiceLine() when $default != null:
-return $default(_that.id,_that.invoiceId,_that.barNumber,_that.basePrice,_that.grossWeight,_that.waterWeight,_that.density,_that.carat,_that.unitPrice,_that.amount,_that.syncedAt);case _:
+return $default(_that.id,_that.invoiceId,_that.barNumber,_that.basePrice,_that.grossWeight,_that.waterWeight,_that.density,_that.carat,_that.unitPrice,_that.amount);case _:
   return orElse();
 
 }
@@ -189,10 +188,10 @@ return $default(_that.id,_that.invoiceId,_that.barNumber,_that.basePrice,_that.g
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  int invoiceId,  int barNumber,  double basePrice,  double grossWeight,  double waterWeight,  double density,  double carat,  double unitPrice,  double amount,  DateTime? syncedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  int invoiceId,  int barNumber,  double basePrice,  double grossWeight,  double waterWeight,  double density,  double carat,  double unitPrice,  double amount)  $default,) {final _that = this;
 switch (_that) {
 case _InvoiceLine():
-return $default(_that.id,_that.invoiceId,_that.barNumber,_that.basePrice,_that.grossWeight,_that.waterWeight,_that.density,_that.carat,_that.unitPrice,_that.amount,_that.syncedAt);case _:
+return $default(_that.id,_that.invoiceId,_that.barNumber,_that.basePrice,_that.grossWeight,_that.waterWeight,_that.density,_that.carat,_that.unitPrice,_that.amount);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -209,10 +208,10 @@ return $default(_that.id,_that.invoiceId,_that.barNumber,_that.basePrice,_that.g
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  int invoiceId,  int barNumber,  double basePrice,  double grossWeight,  double waterWeight,  double density,  double carat,  double unitPrice,  double amount,  DateTime? syncedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  int invoiceId,  int barNumber,  double basePrice,  double grossWeight,  double waterWeight,  double density,  double carat,  double unitPrice,  double amount)?  $default,) {final _that = this;
 switch (_that) {
 case _InvoiceLine() when $default != null:
-return $default(_that.id,_that.invoiceId,_that.barNumber,_that.basePrice,_that.grossWeight,_that.waterWeight,_that.density,_that.carat,_that.unitPrice,_that.amount,_that.syncedAt);case _:
+return $default(_that.id,_that.invoiceId,_that.barNumber,_that.basePrice,_that.grossWeight,_that.waterWeight,_that.density,_that.carat,_that.unitPrice,_that.amount);case _:
   return null;
 
 }
@@ -224,7 +223,7 @@ return $default(_that.id,_that.invoiceId,_that.barNumber,_that.basePrice,_that.g
 
 
 class _InvoiceLine implements InvoiceLine {
-  const _InvoiceLine({required this.id, required this.invoiceId, required this.barNumber, required this.basePrice, required this.grossWeight, required this.waterWeight, required this.density, required this.carat, required this.unitPrice, required this.amount, this.syncedAt});
+  const _InvoiceLine({required this.id, required this.invoiceId, required this.barNumber, required this.basePrice, required this.grossWeight, required this.waterWeight, required this.density, required this.carat, required this.unitPrice, required this.amount});
   
 
 @override final  int id;
@@ -245,7 +244,6 @@ class _InvoiceLine implements InvoiceLine {
 @override final  double unitPrice;
 /// Line total: unitPrice × grossWeight ("Montant").
 @override final  double amount;
-@override final  DateTime? syncedAt;
 
 /// Create a copy of InvoiceLine
 /// with the given fields replaced by the non-null parameter values.
@@ -257,16 +255,16 @@ _$InvoiceLineCopyWith<_InvoiceLine> get copyWith => __$InvoiceLineCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvoiceLine&&(identical(other.id, id) || other.id == id)&&(identical(other.invoiceId, invoiceId) || other.invoiceId == invoiceId)&&(identical(other.barNumber, barNumber) || other.barNumber == barNumber)&&(identical(other.basePrice, basePrice) || other.basePrice == basePrice)&&(identical(other.grossWeight, grossWeight) || other.grossWeight == grossWeight)&&(identical(other.waterWeight, waterWeight) || other.waterWeight == waterWeight)&&(identical(other.density, density) || other.density == density)&&(identical(other.carat, carat) || other.carat == carat)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.syncedAt, syncedAt) || other.syncedAt == syncedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _InvoiceLine&&(identical(other.id, id) || other.id == id)&&(identical(other.invoiceId, invoiceId) || other.invoiceId == invoiceId)&&(identical(other.barNumber, barNumber) || other.barNumber == barNumber)&&(identical(other.basePrice, basePrice) || other.basePrice == basePrice)&&(identical(other.grossWeight, grossWeight) || other.grossWeight == grossWeight)&&(identical(other.waterWeight, waterWeight) || other.waterWeight == waterWeight)&&(identical(other.density, density) || other.density == density)&&(identical(other.carat, carat) || other.carat == carat)&&(identical(other.unitPrice, unitPrice) || other.unitPrice == unitPrice)&&(identical(other.amount, amount) || other.amount == amount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,invoiceId,barNumber,basePrice,grossWeight,waterWeight,density,carat,unitPrice,amount,syncedAt);
+int get hashCode => Object.hash(runtimeType,id,invoiceId,barNumber,basePrice,grossWeight,waterWeight,density,carat,unitPrice,amount);
 
 @override
 String toString() {
-  return 'InvoiceLine(id: $id, invoiceId: $invoiceId, barNumber: $barNumber, basePrice: $basePrice, grossWeight: $grossWeight, waterWeight: $waterWeight, density: $density, carat: $carat, unitPrice: $unitPrice, amount: $amount, syncedAt: $syncedAt)';
+  return 'InvoiceLine(id: $id, invoiceId: $invoiceId, barNumber: $barNumber, basePrice: $basePrice, grossWeight: $grossWeight, waterWeight: $waterWeight, density: $density, carat: $carat, unitPrice: $unitPrice, amount: $amount)';
 }
 
 
@@ -277,7 +275,7 @@ abstract mixin class _$InvoiceLineCopyWith<$Res> implements $InvoiceLineCopyWith
   factory _$InvoiceLineCopyWith(_InvoiceLine value, $Res Function(_InvoiceLine) _then) = __$InvoiceLineCopyWithImpl;
 @override @useResult
 $Res call({
- int id, int invoiceId, int barNumber, double basePrice, double grossWeight, double waterWeight, double density, double carat, double unitPrice, double amount, DateTime? syncedAt
+ int id, int invoiceId, int barNumber, double basePrice, double grossWeight, double waterWeight, double density, double carat, double unitPrice, double amount
 });
 
 
@@ -294,7 +292,7 @@ class __$InvoiceLineCopyWithImpl<$Res>
 
 /// Create a copy of InvoiceLine
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? invoiceId = null,Object? barNumber = null,Object? basePrice = null,Object? grossWeight = null,Object? waterWeight = null,Object? density = null,Object? carat = null,Object? unitPrice = null,Object? amount = null,Object? syncedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? invoiceId = null,Object? barNumber = null,Object? basePrice = null,Object? grossWeight = null,Object? waterWeight = null,Object? density = null,Object? carat = null,Object? unitPrice = null,Object? amount = null,}) {
   return _then(_InvoiceLine(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,invoiceId: null == invoiceId ? _self.invoiceId : invoiceId // ignore: cast_nullable_to_non_nullable
@@ -306,8 +304,7 @@ as double,density: null == density ? _self.density : density // ignore: cast_nul
 as double,carat: null == carat ? _self.carat : carat // ignore: cast_nullable_to_non_nullable
 as double,unitPrice: null == unitPrice ? _self.unitPrice : unitPrice // ignore: cast_nullable_to_non_nullable
 as double,amount: null == amount ? _self.amount : amount // ignore: cast_nullable_to_non_nullable
-as double,syncedAt: freezed == syncedAt ? _self.syncedAt : syncedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as double,
   ));
 }
 

@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import '../features/backup/views/backup_screen.dart';
 import '../features/invoice/views/invoice_detail_screen.dart';
 import '../features/invoice/views/invoice_form_screen.dart';
 import '../features/invoice/views/invoice_list_screen.dart';
@@ -19,6 +20,10 @@ final appRouter = GoRouter(
       builder: (context, state) => InvoiceDetailScreen(
         invoiceId: int.parse(state.pathParameters['id']!),
       ),
+    ),
+    GoRoute(
+      path: '/backup',
+      builder: (context, state) => const BackupScreen(),
     ),
   ],
 );

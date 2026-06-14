@@ -31,8 +31,10 @@ class InvoiceHistoryViewModel extends ChangeNotifier {
   bool          _isLoading     = true;
 
   Invoice?          _selectedInvoice;
-  List<InvoiceLine> _selectedLines = const [];
-  bool              _isReprinting  = false;
+  List<InvoiceLine> _selectedLines   = const [];
+  bool              _isLoadingDetail = false;
+  bool              _isReprinting    = false;
+  String?           _reprintError;
 
   List<Invoice> get savedInvoices => _savedInvoices;
 
@@ -42,29 +44,47 @@ class InvoiceHistoryViewModel extends ChangeNotifier {
 
   List<InvoiceLine> get selectedLines => _selectedLines;
 
+  /// True while a new selection's invoice + lines are being fetched. The
+  /// previous selection stays visible meanwhile (no blank flash).
+  bool get isLoadingDetail => _isLoadingDetail;
+
   bool get isReprinting => _isReprinting;
 
-  /// Loads the invoice + its lines for the detail view. Clears any prior
-  /// selection first so the screen shows a loader rather than stale data.
+  /// Last reprint failure message, or null if the last reprint succeeded.
+  String? get reprintError => _reprintError;
+
+  /// Loads the invoice + its lines for the detail view. Keeps the previous
+  /// selection on screen while loading (flag [isLoadingDetail]) rather than
+  /// blanking it — avoids an empty-pane flash when switching invoices. The
+  /// mobile detail screen still gates on the id, so it shows its loader until
+  /// the requested invoice arrives.
   Future<void> selectInvoice(int id) async {
-    _selectedInvoice = null;
-    _selectedLines   = const [];
+    _isLoadingDetail = true;
     notifyListeners();
     final invoice = await _repo.getInvoice(id);
     final lines   = await _repo.getLines(id);
     _selectedInvoice = invoice;
     _selectedLines   = lines;
+    _isLoadingDetail = false;
     notifyListeners();
   }
 
   /// Regenerates the PDF from stored data and opens the native print
   /// sheet. No recalculation — historical amounts stay byte-for-byte.
-  Future<void> reprintInvoice(Invoice invoice, List<InvoiceLine> lines) async {
-    if (_isReprinting) return;
+  ///
+  /// Returns true on success. On failure, stores the message in
+  /// [reprintError] and returns false (never rethrows to the caller).
+  Future<bool> reprintInvoice(Invoice invoice, List<InvoiceLine> lines) async {
+    if (_isReprinting) return false;
     _isReprinting = true;
+    _reprintError = null;
     notifyListeners();
     try {
       await _printService.printInvoice(invoice, lines);
+      return true;
+    } catch (e) {
+      _reprintError = e.toString();
+      return false;
     } finally {
       _isReprinting = false;
       notifyListeners();

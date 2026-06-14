@@ -68,11 +68,25 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                     TextStyle(color: AppColors.textPrimary, fontSize: 13)),
             onPressed: vm.isReprinting
                 ? null
-                : () => vm.reprintInvoice(invoice, lines),
+                : () async {
+                    final ok = await vm.reprintInvoice(invoice, lines);
+                    if (!ok && context.mounted) {
+                      _showReprintError(context, vm.reprintError);
+                    }
+                  },
           ),
         ],
       ),
       body: InvoiceDetailPanel(invoice: invoice, lines: lines),
+    );
+  }
+
+  void _showReprintError(BuildContext context, String? message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.syncError,
+        content: Text('Échec de l\'impression : ${message ?? 'erreur inconnue'}'),
+      ),
     );
   }
 }

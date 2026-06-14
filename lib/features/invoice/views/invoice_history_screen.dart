@@ -47,7 +47,9 @@ class InvoiceHistoryScreen extends StatelessWidget {
         Expanded(
           child: vm.selectedInvoice != null
               ? _DetailPane(vm: vm)
-              : const _EmptyDetail(),
+              : vm.isLoadingDetail
+                  ? const Center(child: CircularProgressIndicator())
+                  : const _EmptyDetail(),
         ),
       ],
     );
@@ -125,7 +127,20 @@ class _DetailPane extends StatelessWidget {
                         color: AppColors.textPrimary, fontSize: 13)),
                 onPressed: vm.isReprinting
                     ? null
-                    : () => vm.reprintInvoice(invoice, lines),
+                    : () async {
+                        final ok = await vm.reprintInvoice(invoice, lines);
+                        if (!ok && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppColors.syncError,
+                              content: Text(
+                                'Échec de l\'impression : '
+                                '${vm.reprintError ?? 'erreur inconnue'}',
+                              ),
+                            ),
+                          );
+                        }
+                      },
               ),
             ],
           ),

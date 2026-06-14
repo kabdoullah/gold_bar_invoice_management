@@ -32,17 +32,27 @@ lib/
 ├── core/           # constantes, thème, erreurs, utils
 ├── data/
 │   ├── local/      # Drift DB, DAOs, modèles de tables
-│   ├── remote/     # GoogleDriveService
-│   └── repositories/
+│   ├── remote/     # google_drive/GoogleDriveService
+│   ├── repositories/
+│   └── services/   # ExportService, ImportService (orchestration Drift)
 ├── domain/
 │   ├── entities/   # Invoice, InvoiceLine (freezed)
 │   ├── repositories/
-│   └── services/   # GoldBarCalculatorService, PrintService,
-│                   # ExportService, ImportService, BackupService
+│   └── services/   # GoldBarCalculatorService, PrintService, BackupService
 ├── features/
 │   ├── invoice/    # viewmodels / views / widgets
 │   └── backup/     # BackupViewModel, BackupScreen
-└── app/            # app.dart, router.dart, di.dart
+└── app/            # app.dart, app_shell.dart, router.dart, di.dart
+```
+
+### Navigation
+
+```
+/ → AppShell (InvoiceEntryScreen)  — saisie sur écran unique : prix de base,
+    barre (poids + eaux), aperçu temps réel, tableau, Enregistrer & Imprimer
+  ├── Drawer → /history       — liste lecture seule des factures sauvegardées
+  │              └── /history/:id — détail lecture seule + Réimprimer
+  └── Drawer → /backup        — gestion Google Drive
 ```
 
 ## Commandes

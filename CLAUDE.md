@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Flutter mobile app for managing gold bar sale invoices. Single operator, single-user, **offline-first**. Replaces a desktop application the client is used to — the UI must be dense, tabular, and faithful to the original (dark theme, FR number formatting).
 
-**Current state:** Google Drive backup fully implemented and tested on physical device. `schemaVersion = 2`. New UX phase (single-screen entry + history drawer) is the next step — see [New UX Phase](#new-ux-phase).
+**Current state:** Google Drive backup fully implemented and tested on physical device. `schemaVersion = 2`. The single-screen entry + history-drawer UX is **implemented** (commit "single-screen entry UX") — `AppShell` + `InvoiceEntryScreen` + `InvoiceHistoryScreen` + `InvoiceDetailScreen` (read-only). The legacy 3-screen flow (List → Form → Detail) and its viewmodels are gone.
 
 ## Commands
 
@@ -66,32 +66,26 @@ Layering rules (non-negotiable):
 
 ### Provider scoping
 
-`di.dart` provides globally (available to entire app):
+`di.dart` (`buildProviders()`) provides everything globally — order matters, each entry may `read` the ones above it:
 - `AppDatabase`, `GoldBarCalculatorService`, `PrintService`
 - `IInvoiceRepository` (impl: `InvoiceRepositoryImpl`)
 - `ExportService`, `ImportService`, `GoogleDriveService`, `BackupService`
-- `BackupViewModel` (global — `..init()` called at creation)
-
-Created locally via `ChangeNotifierProvider` inside each screen:
-- `InvoiceListViewModel` — created in `InvoiceListScreen.build()`
-- `InvoiceFormViewModel` — created in `InvoiceFormScreen.build()`
-- `InvoiceDetailViewModel` — created in `InvoiceDetailScreen.build()`, takes `invoiceId`
+- `BackupViewModel` (`..init()` called at creation)
+- `InvoiceEntryViewModel` — global; shared by the AppBar `BackupStatusDot` and the entry-screen body (single-user, one live draft)
+- `InvoiceHistoryViewModel` — global; shared across `/history` list and `/history/:id` detail so the loaded selection survives navigation
 
 ## UX Navigation (current)
 
 ```
-/ (InvoiceListScreen)
-  ├── [FAB] → /invoices/new (InvoiceFormScreen)
-  │             sets location, issueDate, basePrice → creates draft → pushReplacement
-  │             ↓
-  │           /invoices/:id (InvoiceDetailScreen)  ← add bars via bottom sheet, Save & Print
-  └── [DraftBanner resume] → /invoices/:id (same draft)
-  └── [list tile tap] → /invoices/:id (read-only saved invoice)
-  └── [AppBar icon] → /backup (BackupScreen)
+/ → AppShell  (AppBar: BackupStatusDot + Drawer button; body: InvoiceEntryScreen)
+  ├── [Drawer] → /history     (InvoiceHistoryScreen — read-only list of saved invoices)
+  │                └── tile tap → /history/:id (InvoiceDetailScreen — read-only + Reprint)
+  └── [Drawer] → /backup      (BackupScreen)
 ```
 
-- `InvoiceDetailScreen`: "Ajouter Barre" FAB opens `showInvoiceLineFormSheet()` (modal bottom sheet with real-time preview); reads `invoice.isDraft` to toggle FAB and delete-line actions
-- `InvoiceFormScreen` navigates to detail via `pushReplacement` so "back" returns to list
+- `InvoiceEntryScreen` is the home screen: base-price input, gross+water entry, live preview, line table, Save & Print — all driven by the global `InvoiceEntryViewModel`. Base price persists across "Ajouter barre"; only gross/water clear (then focus returns to gross). After "Enregistrer & Imprimer" everything clears for the next invoice.
+- `BackupReminderBanner` sits above the entry form; `BackupStatusDot` (colored circle) lives in the AppBar.
+- `InvoiceDetailScreen` is read-only (saved invoices only) with a Reprint action — it no longer handles draft editing.
 
 ## Business Domain — Calculation Formulas (CRITICAL)
 
@@ -135,11 +129,10 @@ All calculations use `double` — never `int` for monetary values. Display round
 
 `InvoiceStatus` enum: `draft` | `saved`. Stored as text in `invoices.status`.
 
-- `InvoiceFormScreen` → `_repo.createDraft()` → INSERT with `status = 'draft'` (survives app kill)
+- `InvoiceEntryViewModel.addLine()` lazily calls `_repo.createDraft()` on the first bar → INSERT with `status = 'draft'` (survives app kill)
 - Each line added → INSERT line + UPDATE invoice totals (barCount, totalGrossWeight, totalWaterWeight, totalAmount) atomically in one transaction
-- "Save & Print" → `finalizeInvoice()` → status → `saved`, generate PDF, open `Printing.layoutPdf()` native sheet; then `_backupService?.autoBackupIfConnected()` fire-and-forget
-- App reopen: `watchDraft()` → show `DraftBanner` (Resume / Discard). Discard cascade-deletes lines via FK.
-- Only one draft at a time — `createDraft()` throws `InvoiceStateException` if one exists
+- `saveAndPrint()` → `finalizeInvoice()` → status → `saved`, generate PDF, open `Printing.layoutPdf()` native sheet; then `autoBackupIfConnected()` fire-and-forget; then `_resetForNewInvoice()`
+- App reopen: `_loadExistingDraft()` rehydrates any open draft into the entry screen. Only one draft at a time — `createDraft()` throws `InvoiceStateException` if one exists
 
 Invoice number format: `FAC-XXXX` (e.g. `FAC-0001`), sequential across all invoices (not year-scoped). Generated via `maxId()` + 1 at draft creation time.
 
@@ -159,9 +152,9 @@ BackupViewModel → BackupService → ExportService / ImportService / GoogleDriv
 - **BackupService** (`domain/services/`): orchestrates the above; owns `autoBackupIfConnected()` (fire-and-forget, never throws to caller). Checks `isAuthorizedSilently()` before upload to avoid background sign-in dialogs.
 
 ### Auto-backup triggers (all wired)
-1. After every `saveAndPrint()` in `InvoiceDetailViewModel` — fire-and-forget via `autoBackupIfConnected()`
+1. After every `saveAndPrint()` in `InvoiceEntryViewModel` — fire-and-forget via `autoBackupIfConnected()`
 2. At app startup — only if last backup > 24 h ago and a backup has been done before (`_StartupController` in `app.dart`)
-3. Reminder banner in `InvoiceListScreen` if last backup > 3 days ago (or never backed up)
+3. `BackupReminderBanner` on `InvoiceEntryScreen` if last backup > 3 days ago (or never backed up)
 
 `PrefsKeys.lastBackupAt` (ISO 8601 UTC string in SharedPreferences) tracks the last successful backup.
 
@@ -189,7 +182,7 @@ All `DateTime` as ISO 8601 UTC; all `double` at full precision. Drafts excluded.
 | Debug SHA-1 | `6B:8A:62:24:A8:A7:D3:E0:91:9C:30:36:0C:7D:EE:59:28:EB:65:E0` |
 | Client Android (type 1) | `833854972385-1pq3th38qkft9lnm5o2jjvif7g3jktuv.apps.googleusercontent.com` |
 | Client Web Application (type 3) | `833854972385-n4p30ffkidfgnhut5de9nm63u0a5n01o.apps.googleusercontent.com` |
-| `serverClientId` dans `main.dart` | client Web ci-dessus |
+| `serverClientId` (constante `AppConfig.googleServerClientId`) | client Web ci-dessus |
 | Scope Drive | `drive.file` (fichiers créés par l'app uniquement) |
 | Écran de consentement | Mode **Test** — ajouter chaque utilisateur manuellement dans "Utilisateurs test" |
 | Utilisateur test configuré | `abdoullahkcoulibaly1@gmail.com` |
@@ -199,7 +192,7 @@ All `DateTime` as ISO 8601 UTC; all `double` at full precision. Drafts excluded.
 **Fichiers Android concernés:**
 - `android/app/google-services.json` — contient les deux clients OAuth (type 1 + type 3)
 - `android/app/src/main/kotlin/com/kemogoha/goldinvoices/MainActivity.kt` — package corrigé
-- `main.dart` — `GoogleSignIn.instance.initialize(serverClientId: '...')` appelé avant `runApp`
+- `main.dart` — `GoogleSignIn.instance.initialize(serverClientId: AppConfig.googleServerClientId)` appelé avant `runApp` (constante dans `core/constants/app_config.dart`)
 
 ## UI Conventions
 
@@ -225,46 +218,20 @@ All `DateTime` as ISO 8601 UTC; all `double` at full precision. Drafts excluded.
 
 No customer/client entity, no authentication, no multi-user, no sync conflict resolution, no push notifications for backup reminders.
 
-## New UX Phase
+## UX Architecture (single-screen entry — implemented)
 
-Replaces the current 3-screen flow (List → Form → Detail) with:
-- **`InvoiceEntryScreen`** — single home screen combining base price input, poids+eaux entry card, real-time preview, line table, and Save & Print
-- **`AppShell`** — root `Scaffold` wrapping `InvoiceEntryScreen` with `AppDrawer` (Drawer nav) and `BackupStatusDot` in AppBar
-- **`InvoiceHistoryScreen`** — accessed from Drawer; read-only list of saved invoices
-- **`InvoiceDetailScreen`** (new version) — read-only detail + Reprint; no longer handles draft editing
+The legacy 3-screen flow (List → Form → Detail) was replaced by:
+- **`AppShell`** (`app/app_shell.dart`) — root `Scaffold` wrapping `InvoiceEntryScreen`, with `AppDrawer` (Drawer nav) and `BackupStatusDot` in the AppBar
+- **`InvoiceEntryScreen`** — single home screen: base price input, poids+eaux entry card, real-time preview, line table, Save & Print
+- **`InvoiceHistoryScreen`** — from Drawer; read-only list of saved invoices
+- **`InvoiceDetailScreen`** — read-only detail + Reprint; never edits drafts
 
-New ViewModels needed:
-- `InvoiceEntryViewModel` — merges concerns of `InvoiceFormViewModel` + `InvoiceDetailViewModel`: manages basePrice, grossWeight, waterWeight, live preview (`currentPreview`), draft lifecycle, line list, `canAddLine`, `isSavingAndPrinting`, `shouldShowBackupReminder`/`backupReminderMessage`/`refreshBackupStatus()`
-- `InvoiceHistoryViewModel` — watches saved invoices, loads selected invoice + its lines for detail view, `reprintInvoice()`
+ViewModels (both global in `di.dart`):
+- `InvoiceEntryViewModel` — `basePrice`, `grossWeight`, `waterWeight`, live preview (`currentPreview`), draft lifecycle (`addLine()` lazily creates the draft, `saveAndPrint()`, `_loadExistingDraft()`, `_resetForNewInvoice()`), `canAddLine`, `canSaveAndPrint`, `isSavingAndPrinting`, `shouldShowBackupReminder`/`backupReminderMessage`/`refreshBackupStatus()`
+- `InvoiceHistoryViewModel` — watches saved invoices, loads selected invoice + lines for detail, `reprintInvoice()`
 
-New routes:
-```
-/           → AppShell (InvoiceEntryScreen body)
-/history    → InvoiceHistoryScreen
-/history/:id → InvoiceDetailScreen(invoiceId)
-/backup     → BackupScreen (unchanged)
-```
-
-Key UX behaviors for `InvoiceEntryScreen`:
-- Base price persists across "Ajouter barre" — only gross/water fields clear
-- After clear: focus returns to gross weight field automatically
+Key UX behaviors of `InvoiceEntryScreen`:
+- Base price persists across "Ajouter barre" — only gross/water fields clear, then focus returns to gross
 - Preview shows `—` placeholders when inputs are empty/invalid
-- After "Enregistrer & Imprimer": all fields clear, table empties, ready for new invoice immediately
-- `BackupReminderBanner` above entry form; `BackupStatusDot` (colored circle) in AppBar
-
-**Confirm with user before each step.**
-
-```
-Step 1. app/app.dart — AppShell widget (Scaffold + AppBar + AppDrawer + InvoiceEntryScreen)
-Step 2. app/router.dart — new routes (/, /history, /history/:id, /backup)
-Step 3. features/invoice/widgets/app_drawer.dart — History + Backup items
-Step 4. features/invoice/widgets/backup_status_dot.dart
-Step 5. features/invoice/viewmodels/invoice_entry_viewmodel.dart
-Step 6. features/invoice/widgets/ — _BasePriceField, _WeightField, _PreviewBlock, _AddBarButton
-Step 7. features/invoice/widgets/invoice_table.dart — update/reuse for EntryScreen + DetailScreen
-Step 8. features/invoice/views/invoice_entry_screen.dart — full assembly, controller management, responsive layout
-Step 9. features/invoice/viewmodels/invoice_history_viewmodel.dart
-Step 10. features/invoice/views/invoice_history_screen.dart
-Step 11. features/invoice/views/invoice_detail_screen.dart — replace with read-only + Reprint
-Step 12. app/di.dart — add InvoiceEntryViewModel, InvoiceHistoryViewModel providers
-```
+- After "Enregistrer & Imprimer": all fields clear, table empties, ready for the next invoice immediately
+- `BackupReminderBanner` above the entry form; `BackupStatusDot` (colored circle) in the AppBar

@@ -123,3 +123,26 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# App launcher icon (Android). Source: 1024x1024 RGBA.
+# Regenerate: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icons/app_icon_1024.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#1A1A2E"
+  adaptive_icon_foreground: "assets/icons/app_icon_1024.png"
+
+# Native splash screen (Android). bg matches the icon art's blue card (#16213E)
+# so the icon's square background blends into the splash (no visible square edge).
+# Regenerate: dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#16213E"
+  image: "assets/icons/app_icon_512.png"
+  android: true
+  ios: false
+  web: false
+  android_12:
+    color: "#16213E"
+    image: "assets/icons/app_icon_512.png"

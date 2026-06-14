@@ -32,8 +32,30 @@ class _InvoiceEntryScreenState extends State<InvoiceEntryScreen> {
   final _waterCtrl  = TextEditingController();
   final _grossFocus = FocusNode();
 
+  late final InvoiceEntryViewModel _vm;
+
+  @override
+  void initState() {
+    super.initState();
+    _vm = context.read<InvoiceEntryViewModel>();
+    _syncBaseField();
+    // Repopulate the base field when a draft is auto-loaded — reactively,
+    // never inside build().
+    _vm.addListener(_syncBaseField);
+  }
+
+  /// Mirrors the VM's basePrice into the field, but only while the field is
+  /// untouched, so it never fights the operator's typing.
+  void _syncBaseField() {
+    if (!mounted) return;
+    if (_vm.basePrice != null && _baseCtrl.text.isEmpty) {
+      _baseCtrl.text = _formatBase(_vm.basePrice!);
+    }
+  }
+
   @override
   void dispose() {
+    _vm.removeListener(_syncBaseField);
     _baseCtrl.dispose();
     _grossCtrl.dispose();
     _waterCtrl.dispose();
@@ -65,12 +87,6 @@ class _InvoiceEntryScreenState extends State<InvoiceEntryScreen> {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<InvoiceEntryViewModel>();
-
-    // Repopulate the base field when a draft is auto-loaded (only while
-    // the field is untouched, so it never fights the operator's typing).
-    if (vm.basePrice != null && _baseCtrl.text.isEmpty) {
-      _baseCtrl.text = _formatBase(vm.basePrice!);
-    }
 
     return Column(
       children: [

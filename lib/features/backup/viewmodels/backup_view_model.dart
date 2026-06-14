@@ -4,9 +4,16 @@ import '../../../data/remote/google_drive/google_drive_service.dart';
 import '../../../domain/services/backup_service.dart';
 import '../../../data/services/import_service.dart';
 
-enum BackupStatus { idle, exporting, uploading, downloading, importing, success, error }
+/// Phases of a manual backup.
+enum BackupPhase { idle, exporting, uploading, success, error }
+
+/// Phases of a restore.
+enum RestorePhase { idle, downloading, importing, success, error }
 
 /// State for BackupScreen: manual backup, backup listing, and restore.
+///
+/// Backup and restore track their state independently so a success/error in
+/// one operation never paints the other card's banner.
 class BackupViewModel extends ChangeNotifier {
   BackupViewModel({
     required this._backupService,
@@ -18,21 +25,29 @@ class BackupViewModel extends ChangeNotifier {
   final ImportService      _importService;
   final GoogleDriveService _driveService;
 
-  BackupStatus          _status           = BackupStatus.idle;
+  BackupPhase           _backupPhase      = BackupPhase.idle;
+  RestorePhase          _restorePhase     = RestorePhase.idle;
   List<DriveBackupFile> _availableBackups = const [];
   String?               _lastBackupLabel;
-  String?               _errorMessage;
+  String?               _backupError;
+  String?               _restoreError;
 
-  BackupStatus          get status           => _status;
+  BackupPhase           get backupPhase      => _backupPhase;
+  RestorePhase          get restorePhase     => _restorePhase;
   List<DriveBackupFile> get availableBackups => _availableBackups;
   String?               get lastBackupLabel  => _lastBackupLabel;
-  String?               get errorMessage     => _errorMessage;
+  String?               get backupError      => _backupError;
+  String?               get restoreError     => _restoreError;
 
-  bool get isWorking =>
-      _status == BackupStatus.exporting  ||
-      _status == BackupStatus.uploading  ||
-      _status == BackupStatus.downloading ||
-      _status == BackupStatus.importing;
+  bool get isBackingUp =>
+      _backupPhase == BackupPhase.exporting ||
+      _backupPhase == BackupPhase.uploading;
+
+  bool get isRestoring =>
+      _restorePhase == RestorePhase.downloading ||
+      _restorePhase == RestorePhase.importing;
+
+  bool get isWorking => isBackingUp || isRestoring;
 
   /// Call once after construction (done by di.dart via `..init()`).
   Future<void> init() async {
@@ -43,21 +58,21 @@ class BackupViewModel extends ChangeNotifier {
 
   /// Manual backup triggered from BackupScreen.
   Future<void> backupNow() async {
-    _errorMessage = null;
-    _status       = BackupStatus.exporting;
+    _backupError = null;
+    _backupPhase = BackupPhase.exporting;
     notifyListeners();
     try {
       await _backupService.performBackup(
         onExported: () {
-          _status = BackupStatus.uploading;
+          _backupPhase = BackupPhase.uploading;
           notifyListeners();
         },
       );
       _lastBackupLabel = _formatDate(DateTime.now());
-      _status          = BackupStatus.success;
+      _backupPhase     = BackupPhase.success;
     } catch (e) {
-      _errorMessage = e.toString();
-      _status       = BackupStatus.error;
+      _backupError = e.toString();
+      _backupPhase = BackupPhase.error;
     } finally {
       notifyListeners();
     }
@@ -65,11 +80,12 @@ class BackupViewModel extends ChangeNotifier {
 
   /// Loads available backups from Drive into [availableBackups].
   Future<void> loadAvailableBackups() async {
-    _errorMessage = null;
+    _restoreError = null;
     try {
       _availableBackups = await _driveService.listBackups();
     } catch (e) {
-      _errorMessage     = e.toString();
+      _restoreError     = e.toString();
+      _restorePhase     = RestorePhase.error;
       _availableBackups = const [];
     }
     notifyListeners();
@@ -77,27 +93,29 @@ class BackupViewModel extends ChangeNotifier {
 
   /// Downloads [backup] from Drive and imports it into the local DB.
   Future<void> restoreFromDrive(DriveBackupFile backup) async {
-    _errorMessage = null;
-    _status       = BackupStatus.downloading;
+    _restoreError = null;
+    _restorePhase = RestorePhase.downloading;
     notifyListeners();
     try {
       final file = await _driveService.downloadBackup(backup.driveFileId);
-      _status    = BackupStatus.importing;
+      _restorePhase = RestorePhase.importing;
       notifyListeners();
       await _importService.importFromJson(file);
-      _status = BackupStatus.success;
+      _restorePhase = RestorePhase.success;
     } catch (e) {
-      _errorMessage = e.toString();
-      _status       = BackupStatus.error;
+      _restoreError = e.toString();
+      _restorePhase = RestorePhase.error;
     } finally {
       notifyListeners();
     }
   }
 
-  /// Resets a terminal state (success / error) back to idle.
+  /// Resets both terminal states (success / error) back to idle.
   void reset() {
-    _status       = BackupStatus.idle;
-    _errorMessage = null;
+    _backupPhase  = BackupPhase.idle;
+    _restorePhase = RestorePhase.idle;
+    _backupError  = null;
+    _restoreError = null;
     notifyListeners();
   }
 

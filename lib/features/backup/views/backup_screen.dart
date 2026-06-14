@@ -34,6 +34,7 @@ class _BackupBodyState extends State<_BackupBody> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<BackupViewModel>().loadAvailableBackups();
     });
   }
@@ -53,7 +54,7 @@ class _BackupBodyState extends State<_BackupBody> {
           onSelect: (f) => setState(() => _selected = f),
         ),
         const SizedBox(height: 16),
-        _WarningNote(),
+        const _WarningNote(),
       ],
     );
 
@@ -112,12 +113,12 @@ class _BackupCard extends StatelessWidget {
               style: const TextStyle(color: AppColors.textMuted),
             ),
             const SizedBox(height: 16),
-            if (vm.status == BackupStatus.error &&
-                vm.errorMessage != null) ...[
-              _ErrorBanner(message: vm.errorMessage!, onRetry: vm.backupNow),
+            if (vm.backupPhase == BackupPhase.error &&
+                vm.backupError != null) ...[
+              _ErrorBanner(message: vm.backupError!, onRetry: vm.backupNow),
               const SizedBox(height: 12),
             ],
-            if (vm.status == BackupStatus.success) ...[
+            if (vm.backupPhase == BackupPhase.success) ...[
               const _SuccessBanner(label: 'Sauvegarde réussie'),
               const SizedBox(height: 12),
             ],
@@ -135,13 +136,12 @@ class _BackupButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isBackingUp = vm.status == BackupStatus.exporting ||
-        vm.status == BackupStatus.uploading;
+    final isBackingUp = vm.isBackingUp;
 
     String label;
-    if (vm.status == BackupStatus.exporting) {
+    if (vm.backupPhase == BackupPhase.exporting) {
       label = 'Export des données…';
-    } else if (vm.status == BackupStatus.uploading) {
+    } else if (vm.backupPhase == BackupPhase.uploading) {
       label = 'Envoi vers Drive…';
     } else {
       label = 'Sauvegarder maintenant';
@@ -234,17 +234,17 @@ class _RestoreCard extends StatelessWidget {
                 ),
               ),
             const SizedBox(height: 12),
-            if (vm.status == BackupStatus.error &&
-                vm.errorMessage != null) ...[
+            if (vm.restorePhase == RestorePhase.error &&
+                vm.restoreError != null) ...[
               _ErrorBanner(
-                message: vm.errorMessage!,
+                message: vm.restoreError!,
                 onRetry: selected != null
                     ? () => vm.restoreFromDrive(selected!)
                     : null,
               ),
               const SizedBox(height: 12),
             ],
-            if (vm.status == BackupStatus.success) ...[
+            if (vm.restorePhase == RestorePhase.success) ...[
               const _SuccessBanner(label: 'Restauration réussie'),
               const SizedBox(height: 12),
             ],
@@ -272,13 +272,12 @@ class _RestoreButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isRestoring = vm.status == BackupStatus.downloading ||
-        vm.status == BackupStatus.importing;
+    final isRestoring = vm.isRestoring;
 
     String label;
-    if (vm.status == BackupStatus.downloading) {
+    if (vm.restorePhase == RestorePhase.downloading) {
       label = 'Téléchargement…';
-    } else if (vm.status == BackupStatus.importing) {
+    } else if (vm.restorePhase == RestorePhase.importing) {
       label = 'Import des données…';
     } else {
       label = 'Restaurer la sauvegarde sélectionnée';
@@ -394,6 +393,8 @@ class _SuccessBanner extends StatelessWidget {
 }
 
 class _WarningNote extends StatelessWidget {
+  const _WarningNote();
+
   @override
   Widget build(BuildContext context) {
     return Row(

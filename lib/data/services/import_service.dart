@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../core/errors/backup_exceptions.dart';
 import '../local/database/app_database.dart';
@@ -31,7 +32,7 @@ class ImportService {
 
     final Map<String, dynamic> data;
     try {
-      data = jsonDecode(content) as Map<String, dynamic>;
+      data = await compute(_decodeJson, content);
     } catch (e) {
       throw CorruptedBackupException('Invalid JSON: $e');
     }
@@ -54,27 +55,37 @@ class ImportService {
           'Missing or invalid invoices / invoiceLines');
     }
 
+    // Map + validate BEFORE the transaction: turns raw cast errors into the
+    // documented CorruptedBackupException, and keeps the transaction short.
+    final List<InvoicesCompanion> invoiceRows;
+    final List<InvoiceLinesCompanion> lineRows;
+    try {
+      invoiceRows = invoicesData
+          .map((e) => _invoiceFromJson(e as Map<String, dynamic>))
+          .toList();
+      lineRows = linesData
+          .map((e) => _lineFromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw CorruptedBackupException('Invalid backup entry: $e');
+    }
+
     await _db.transaction(() async {
       // Cascade delete removes lines of saved invoices automatically.
       await (_db.delete(_db.invoices)
             ..where((i) => i.status.equals('saved')))
           .go();
 
-      for (final inv in invoicesData) {
-        if (inv is! Map<String, dynamic>) {
-          throw const CorruptedBackupException('Invalid invoice entry');
-        }
-        await _db.into(_db.invoices).insert(_invoiceFromJson(inv));
-      }
-
-      for (final line in linesData) {
-        if (line is! Map<String, dynamic>) {
-          throw const CorruptedBackupException('Invalid line entry');
-        }
-        await _db.into(_db.invoiceLines).insert(_lineFromJson(line));
-      }
+      await _db.batch((b) {
+        b.insertAll(_db.invoices, invoiceRows);
+        b.insertAll(_db.invoiceLines, lineRows);
+      });
     });
   }
+
+  /// Top-level-callable decode for `compute()` (must not capture `this`).
+  static Map<String, dynamic> _decodeJson(String s) =>
+      jsonDecode(s) as Map<String, dynamic>;
 
   InvoicesCompanion _invoiceFromJson(Map<String, dynamic> m) {
     return InvoicesCompanion(

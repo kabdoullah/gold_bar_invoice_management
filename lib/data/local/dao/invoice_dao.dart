@@ -44,14 +44,21 @@ class InvoiceDao extends DatabaseAccessor<AppDatabase> with _$InvoiceDaoMixin {
   }
 
   /// The unfinished invoice, if any. The app never creates more than one
-  /// draft at a time.
+  /// draft at a time; `limit(1)` (newest first) tolerates an accidental
+  /// dupe from a bad restore instead of throwing on >1 row.
   Future<InvoiceRow?> findDraft() {
-    return (select(invoices)..where((i) => i.status.equals('draft')))
+    return (select(invoices)
+          ..where((i) => i.status.equals('draft'))
+          ..orderBy([(i) => OrderingTerm.desc(i.id)])
+          ..limit(1))
         .getSingleOrNull();
   }
 
   Stream<InvoiceRow?> watchDraft() {
-    return (select(invoices)..where((i) => i.status.equals('draft')))
+    return (select(invoices)
+          ..where((i) => i.status.equals('draft'))
+          ..orderBy([(i) => OrderingTerm.desc(i.id)])
+          ..limit(1))
         .watchSingleOrNull();
   }
 

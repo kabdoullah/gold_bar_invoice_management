@@ -13,13 +13,9 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        // Scaffold auto-adds the hamburger icon (and wires openDrawer)
+        // whenever `drawer` is set — no explicit leading needed.
         title: const Text('Gestion Factures Or'),
-        leading: Builder(
-          builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(ctx).openDrawer(),
-          ),
-        ),
         actions: const [BackupStatusDot()],
       ),
       drawer: const AppDrawer(),

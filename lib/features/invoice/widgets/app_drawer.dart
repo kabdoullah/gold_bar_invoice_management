@@ -33,7 +33,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text('Historique des factures',
                   style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
               onTap: () {
-                Navigator.pop(context);
+                Navigator.pop(context); // close the drawer
                 context.push('/history');
               },
             ),
@@ -43,7 +43,7 @@ class AppDrawer extends StatelessWidget {
               title: const Text('Sauvegarde & Restauration',
                   style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
               onTap: () {
-                Navigator.pop(context);
+                Navigator.pop(context); // close the drawer
                 context.push('/backup');
               },
             ),

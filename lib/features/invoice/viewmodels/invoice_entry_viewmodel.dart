@@ -98,10 +98,13 @@ class InvoiceEntryViewModel extends ChangeNotifier {
   // ── Inputs ────────────────────────────────────────────────────────
 
   void setBasePrice(double? value) {
+    // Once lines exist the basePrice is locked (stored line amounts depend
+    // on it). Ignore edits so the in-memory value keeps reflecting the
+    // locked truth instead of going blank under the operator.
+    if (_lines.isNotEmpty) return;
     _basePrice = value;
-    // Keep a freshly-created (still empty) draft's header in sync — once
-    // lines exist the repository locks basePrice, so we don't touch it.
-    if (_draft != null && _lines.isEmpty && value != null && value > 0) {
+    // Keep a freshly-created (still empty) draft's header in sync.
+    if (_draft != null && value != null && value > 0) {
       // ignore: unawaited_futures
       _repo.updateDraftHeader(_draft!.id, basePrice: value);
     }

@@ -20,7 +20,11 @@ class AppShell extends StatelessWidget {
         actions: const [ThemeToggleButton(), BackupStatusDot()],
       ),
       drawer: const AppDrawer(),
-      body: const InvoiceEntryScreen(),
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: const InvoiceEntryScreen(),
+      ),
     );
   }
 }

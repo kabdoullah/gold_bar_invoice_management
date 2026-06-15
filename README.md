@@ -63,6 +63,7 @@ flutter run
 flutter test
 flutter analyze
 dart run build_runner build --delete-conflicting-outputs
+flutter build apk --release   # APK signé → build/app/outputs/flutter-apk/app-release.apk
 ```
 
 ## Configuration Google Cloud (projet `goldinvoicesapp`)
@@ -75,24 +76,34 @@ La sauvegarde Drive nécessite les éléments suivants configurés dans [Google 
 | Client Web Application (type 3) | `833854972385-n4p30ffkidfgnhut5de9nm63u0a5n01o.apps.googleusercontent.com` |
 | Package Android | `com.kemogoha.goldinvoices` |
 | Debug SHA-1 | `6B:8A:62:24:A8:A7:D3:E0:91:9C:30:36:0C:7D:EE:59:28:EB:65:E0` |
-| Scope Drive | `drive.file` |
-| Écran de consentement | Mode Test — ajouter les utilisateurs dans "Utilisateurs test" |
+| Release SHA-1 | `56:C5:0C:9E:AF:AD:48:3E:61:35:45:DD:44:82:51:C8:3B:D2:3C:E9` |
+| Scope Drive | `drive.file` (non-sensible) |
+| Écran de consentement | **En production** — tout compte Google peut autoriser, sans liste d'utilisateurs test |
 
-Pour obtenir le SHA-1 du keystore de debug :
+Les deux SHA-1 (debug + release) sont enregistrés sur le client Android (type 1).
+
+Pour obtenir le SHA-1 d'un keystore :
 ```bash
+# debug
 keytool -list -v -keystore ~/.android/debug.keystore \
   -alias androiddebugkey -storepass android -keypass android
+# release
+keytool -list -v -keystore android/app/upload-keystore.jks -alias upload
 ```
 
-### Ajouter un utilisateur test
+### Build de release (signing)
 
-Google Cloud Console → APIs & Services → Écran de consentement OAuth → Utilisateurs test → + Add users.
+`android/app/build.gradle.kts` charge `android/key.properties` (gitignoré) pour la config de signature `release`, avec repli sur les clés debug si absent. Le keystore `android/app/upload-keystore.jks` et `key.properties` sont **gitignorés — ne jamais les committer**. Perdre le keystore = impossible de mettre à jour l'app.
 
-### Pour un build de release
+`key.properties` attendu :
+```properties
+storePassword=…
+keyPassword=…
+keyAlias=upload
+storeFile=upload-keystore.jks
+```
 
-1. Générer un keystore de release et enregistrer son SHA-1 comme nouveau client Android dans Cloud Console
-2. Mettre à jour `android/app/google-services.json` avec le nouveau client
-3. Soumettre l'écran de consentement OAuth pour vérification Google
+`drive.file` étant un scope non-sensible, la publication en production ne requiert **aucune vérification Google**. L'avertissement "branding doit être validé" est cosmétique et ne bloque pas l'autorisation.
 
 ## Formules de calcul (critiques)
 

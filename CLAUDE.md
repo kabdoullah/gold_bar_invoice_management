@@ -18,7 +18,10 @@ flutter test test/domain/services/gold_bar_calculator_service_test.dart   # sing
 flutter test --plain-name "line 1"       # single test by name
 flutter analyze                          # lint
 dart run build_runner build --delete-conflicting-outputs   # regenerate Drift + freezed code (after table/entity changes)
+flutter build apk --release              # signed release APK → build/app/outputs/flutter-apk/app-release.apk
 ```
+
+**Release signing:** `android/app/build.gradle.kts` loads `android/key.properties` (gitignored) for the `release` signing config, falling back to debug keys when absent (so `flutter run --release` still works without the keystore). Keystore `android/app/upload-keystore.jks` and `key.properties` are gitignored — never commit them. Losing the keystore means the app can no longer be updated.
 
 ## Tech Stack
 
@@ -188,19 +191,22 @@ All `DateTime` as ISO 8601 UTC; all `double` at full precision. Drafts excluded.
 |---------|--------|
 | Package Android | `com.kemogoha.goldinvoices` |
 | Debug SHA-1 | `6B:8A:62:24:A8:A7:D3:E0:91:9C:30:36:0C:7D:EE:59:28:EB:65:E0` |
-| Client Android (type 1) | `833854972385-1pq3th38qkft9lnm5o2jjvif7g3jktuv.apps.googleusercontent.com` |
+| Release SHA-1 | `56:C5:0C:9E:AF:AD:48:3E:61:35:45:DD:44:82:51:C8:3B:D2:3C:E9` |
+| Client Android (type 1) | `833854972385-1pq3th38qkft9lnm5o2jjvif7g3jktuv.apps.googleusercontent.com` — **les deux** SHA-1 (debug + release) y sont enregistrés |
 | Client Web Application (type 3) | `833854972385-n4p30ffkidfgnhut5de9nm63u0a5n01o.apps.googleusercontent.com` |
 | `serverClientId` (constante `AppConfig.googleServerClientId`) | client Web ci-dessus |
-| Scope Drive | `drive.file` (fichiers créés par l'app uniquement) |
-| Écran de consentement | Mode **Test** — ajouter chaque utilisateur manuellement dans "Utilisateurs test" |
-| Utilisateur test configuré | `abdoullahkcoulibaly1@gmail.com` |
+| Scope Drive | `drive.file` (fichiers créés par l'app uniquement, non-sensible) |
+| Écran de consentement | **En production** (publié) — tout compte Google peut autoriser, pas de liste d'utilisateurs test, token sans expiration |
 
-**Pour release (production):** changer le SHA-1 debug par le SHA-1 de la clé de signature release, publier l'écran de consentement OAuth (vérification Google requise si scope sensible).
+**Publication OAuth :** `drive.file` étant non-sensible, la publication en production ne demande **aucune vérification Google**. L'avertissement "branding doit être validé" est cosmétique (logo/nom) et ne bloque **pas** l'autorisation.
+
+**Symptôme connu — la sauvegarde tourne à l'infini après le sélecteur de compte :** `authorizationHeaders(promptIfNecessary: true)` ne retourne jamais (aucune exception). Cause = compte non autorisé pour l'état de l'écran de consentement (app en mode Test + compte absent des utilisateurs test). Fix = publier en production, ou ajouter le compte aux utilisateurs test.
 
 **Fichiers Android concernés:**
 - `android/app/google-services.json` — contient les deux clients OAuth (type 1 + type 3)
 - `android/app/src/main/kotlin/com/kemogoha/goldinvoices/MainActivity.kt` — package corrigé
 - `main.dart` — `GoogleSignIn.instance.initialize(serverClientId: AppConfig.googleServerClientId)` appelé avant `runApp` (constante dans `core/constants/app_config.dart`)
+- `lib/data/remote/google_drive/google_drive_service.dart` — `_ensureInitialized()` rappelle `initialize()` et **doit aussi** passer `serverClientId`; un appel nu jette `clientConfigurationError: serverClientId must be provided on Android` (fait planter le backup en release)
 
 ## UI Conventions
 

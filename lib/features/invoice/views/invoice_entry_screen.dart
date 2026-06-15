@@ -201,11 +201,12 @@ class _BasePriceField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return TextField(
       controller: controller,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
-      decoration: _inputDecoration('Prix de base'),
+      style: TextStyle(color: colors.textPrimary, fontSize: 16),
+      decoration: _inputDecoration(colors, 'Prix de base'),
       onChanged: (v) => vm.setBasePrice(_InvoiceEntryScreenState._parse(v)),
     );
   }
@@ -230,6 +231,7 @@ class _EntryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final fields = Row(
       children: [
         Expanded(
@@ -262,7 +264,7 @@ class _EntryCard extends StatelessWidget {
     final Widget body = Column(
       children: [
         fields,
-        const Divider(color: AppColors.tableBorder, height: 20),
+        Divider(color: colors.border, height: 20),
         preview,
         const SizedBox(height: 12),
         addButton,
@@ -271,9 +273,9 @@ class _EntryCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.backgroundTable,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.tableBorder, width: 0.5),
+        border: Border.all(color: colors.border, width: 0.5),
       ),
       padding: const EdgeInsets.all(12),
       child: body,
@@ -296,12 +298,13 @@ class _WeightField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return TextField(
       controller: controller,
       focusNode: focusNode,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
-      decoration: _inputDecoration(label),
+      style: TextStyle(color: colors.textPrimary, fontSize: 15),
+      decoration: _inputDecoration(colors, label),
       onChanged: onChanged,
     );
   }
@@ -353,18 +356,18 @@ class _PreviewRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
-              style: const TextStyle(
-                  color: AppColors.textMuted, fontSize: 13)),
+              style: TextStyle(color: colors.textSecondary, fontSize: 13)),
           Text(
             value,
             style: TextStyle(
-              color: isRed ? AppColors.accentCarat : AppColors.textPrimary,
+              color: isRed ? colors.accentCarat : colors.textPrimary,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
@@ -385,6 +388,7 @@ class _AddBarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
@@ -392,9 +396,9 @@ class _AddBarButton extends StatelessWidget {
         label: const Text('Ajouter barre'),
         onPressed: enabled ? onPressed : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.tableHeader,
-          foregroundColor: AppColors.textPrimary,
-          disabledBackgroundColor: AppColors.tableBorder,
+          backgroundColor: colors.accentAction,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: colors.border,
           padding: const EdgeInsets.symmetric(vertical: 12),
         ),
       ),
@@ -404,22 +408,22 @@ class _AddBarButton extends StatelessWidget {
 
 // ── Shared input decoration ──────────────────────────────────────────
 
-InputDecoration _inputDecoration(String label) {
+InputDecoration _inputDecoration(AppColorScheme colors, String label) {
   final border = OutlineInputBorder(
     borderRadius: BorderRadius.circular(8),
-    borderSide: const BorderSide(color: AppColors.tableBorder, width: 0.5),
+    borderSide: BorderSide(color: colors.border, width: 0.5),
   );
   return InputDecoration(
     labelText: label,
-    labelStyle: const TextStyle(color: AppColors.textMuted),
+    labelStyle: TextStyle(color: colors.textSecondary),
     filled: true,
-    fillColor: AppColors.backgroundTable,
+    fillColor: colors.surface,
     isDense: true,
     border: border,
     enabledBorder: border,
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),
-      borderSide: const BorderSide(color: AppColors.tableHeader, width: 1),
+      borderSide: BorderSide(color: colors.accentAction, width: 1),
     ),
   );
 }

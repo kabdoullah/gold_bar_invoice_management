@@ -17,6 +17,8 @@ class TotalsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
     final stats = <Widget>[
       _Stat('Poids Total', NumberFormatter.weight(invoice.totalGrossWeight)),
       _Stat('Eaux Total', NumberFormatter.weight(invoice.totalWaterWeight)),
@@ -29,36 +31,36 @@ class TotalsWidget extends StatelessWidget {
         : Column(
             children: [
               Row(children: [Expanded(child: stats[0]), Expanded(child: stats[1])]),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Row(children: [Expanded(child: stats[2]), Expanded(child: stats[3])]),
             ],
           );
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.backgroundTable,
+        color: colors.totalBackground,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.tableBorder, width: 0.5),
+        border: Border.all(color: colors.border, width: 0.5),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           grid,
-          const Divider(color: AppColors.tableBorder, height: 16),
+          Divider(color: colors.border, height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              const Text(
+              Text(
                 'Montant Total',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                style: TextStyle(color: colors.textSecondary, fontSize: 13),
               ),
               Text(
                 NumberFormatter.amount(invoice.totalAmount),
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: colors.totalText,
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                 ),
@@ -81,18 +83,19 @@ class _Stat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+          style: TextStyle(color: colors.textSecondary, fontSize: 11),
         ),
         const SizedBox(height: 2),
         Text(
           value,
           style: TextStyle(
-            color: isRed ? AppColors.accentCarat : AppColors.textPrimary,
+            color: isRed ? colors.accentCarat : colors.totalText,
             fontWeight: FontWeight.bold,
             fontSize: 14,
           ),

@@ -44,19 +44,20 @@ class InvoiceTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     if (scrollable) {
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: _buildTable(flexible: false),
+        child: _buildTable(colors, flexible: false),
       );
     }
-    return _buildTable(flexible: true);
+    return _buildTable(colors, flexible: true);
   }
 
-  Widget _buildTable({required bool flexible}) {
+  Widget _buildTable(AppColorScheme colors, {required bool flexible}) {
     const fixedWidths = [100.0, 90.0, 80.0, 80.0, 80.0, 110.0, 140.0];
     return Table(
-      border: TableBorder.all(color: AppColors.tableBorder, width: 1),
+      border: TableBorder.all(color: colors.border, width: 1),
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       columnWidths: {
         for (var i = 0; i < fixedWidths.length; i++)
@@ -67,29 +68,29 @@ class InvoiceTable extends StatelessWidget {
       },
       children: [
         TableRow(
-          decoration: const BoxDecoration(color: AppColors.tableHeader),
+          decoration: BoxDecoration(color: colors.tableHeader),
           children: [
-            for (final label in _headerLabels) _headerCell(label),
+            for (final label in _headerLabels) _headerCell(colors, label),
             if (_canDelete) const SizedBox.shrink(),
           ],
         ),
         for (final line in lines)
           TableRow(
-            decoration: const BoxDecoration(color: AppColors.backgroundTable),
+            decoration: BoxDecoration(color: colors.surface),
             children: [
-              _cell(NumberFormatter.amount(line.basePrice),
-                  color: AppColors.textMuted),
-              _cell(NumberFormatter.weight(line.grossWeight)),
-              _cell(NumberFormatter.weight(line.waterWeight)),
-              _cell(NumberFormatter.density(line.density)),
-              _cell(NumberFormatter.carat(line.carat),
-                  color: AppColors.accentCarat, bold: true),
-              _cell(NumberFormatter.unitPrice(line.unitPrice)),
-              _cell(NumberFormatter.amount(line.amount)),
+              _cell(colors, NumberFormatter.amount(line.basePrice),
+                  color: colors.textDimmed),
+              _cell(colors, NumberFormatter.weight(line.grossWeight)),
+              _cell(colors, NumberFormatter.weight(line.waterWeight)),
+              _cell(colors, NumberFormatter.density(line.density)),
+              _cell(colors, NumberFormatter.carat(line.carat),
+                  color: colors.accentCarat, bold: true),
+              _cell(colors, NumberFormatter.unitPrice(line.unitPrice)),
+              _cell(colors, NumberFormatter.amount(line.amount)),
               if (_canDelete)
                 IconButton(
-                  icon: const Icon(Icons.delete_outline,
-                      size: 18, color: AppColors.textMuted),
+                  icon: Icon(Icons.delete_outline,
+                      size: 18, color: colors.textSecondary),
                   onPressed: () => onDeleteLine!(line),
                   tooltip: 'Supprimer la barre ${line.barNumber}',
                 ),
@@ -99,14 +100,14 @@ class InvoiceTable extends StatelessWidget {
     );
   }
 
-  Widget _headerCell(String label) {
+  Widget _headerCell(AppColorScheme colors, String label) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Text(
         label,
         textAlign: TextAlign.right,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
+        style: TextStyle(
+          color: colors.textPrimary,
           fontWeight: FontWeight.bold,
           fontSize: 13,
         ),
@@ -114,14 +115,15 @@ class InvoiceTable extends StatelessWidget {
     );
   }
 
-  Widget _cell(String text, {Color? color, bool bold = false}) {
+  Widget _cell(AppColorScheme colors, String text,
+      {Color? color, bool bold = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: Text(
         text,
         textAlign: TextAlign.right,
         style: TextStyle(
-          color: color ?? AppColors.textPrimary,
+          color: color ?? colors.textPrimary,
           fontWeight: bold ? FontWeight.bold : FontWeight.normal,
           fontSize: 13,
         ),

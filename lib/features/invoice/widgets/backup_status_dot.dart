@@ -12,9 +12,10 @@ class BackupStatusDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final vm = context.watch<InvoiceEntryViewModel>();
     final due = vm.shouldShowBackupReminder;
-    final color = due ? AppColors.syncWarning : AppColors.syncSuccess;
+    final color = due ? colors.warning : colors.success;
 
     return Padding(
       padding: const EdgeInsets.only(right: 16),

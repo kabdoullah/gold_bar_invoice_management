@@ -17,23 +17,24 @@ class BackupReminderBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return ColoredBox(
-      color: AppColors.draftWarning.withValues(alpha: 0.15),
+      color: colors.warning.withValues(alpha: 0.15),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.backup_outlined,
-              color: AppColors.draftWarning,
+              color: colors.warning,
               size: 20,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(
-                  color: AppColors.draftWarning,
+                style: TextStyle(
+                  color: colors.warning,
                   fontSize: 13,
                 ),
               ),
@@ -41,7 +42,7 @@ class BackupReminderBanner extends StatelessWidget {
             TextButton(
               onPressed: onBackupNow,
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.draftWarning,
+                foregroundColor: colors.warning,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
               child: const Text('Sauvegarder →'),

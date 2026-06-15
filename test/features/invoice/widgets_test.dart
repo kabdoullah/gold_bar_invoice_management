@@ -28,8 +28,9 @@ void main() {
       expect(find.text('30 687 031,02'), findsOneWidget);
       expect(find.text('430,87'), findsOneWidget);
 
+      // _wrap uses a default (light) MaterialApp theme.
       final caratText = tester.widget<Text>(find.text('22,32'));
-      expect(caratText.style?.color, AppColors.accentCarat);
+      expect(caratText.style?.color, AppColorScheme.light().accentCarat);
     });
 
     testWidgets('delete icon only in draft mode', (tester) async {

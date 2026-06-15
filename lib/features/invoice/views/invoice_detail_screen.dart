@@ -34,6 +34,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors  = AppColors.of(context);
     final vm      = context.watch<InvoiceHistoryViewModel>();
     final invoice = vm.selectedInvoice;
     final lines   = vm.selectedLines;
@@ -41,37 +42,34 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     // Loading or stale (selection not yet for this route's id).
     if (invoice == null || invoice.id != widget.invoiceId) {
       return Scaffold(
-        backgroundColor: AppColors.backgroundPrimary,
-        appBar: AppBar(backgroundColor: AppColors.tableHeader),
+        appBar: AppBar(),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundPrimary,
       appBar: AppBar(
-        backgroundColor: AppColors.tableHeader,
         title: Text(invoice.invoiceNumber),
         actions: [
           TextButton.icon(
             icon: vm.isReprinting
-                ? const SizedBox(
+                ? SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.textPrimary),
+                        strokeWidth: 2, color: colors.appBarForeground),
                   )
-                : const Icon(Icons.print,
-                    color: AppColors.textPrimary, size: 18),
-            label: const Text('Réimprimer',
+                : Icon(Icons.print,
+                    color: colors.appBarForeground, size: 18),
+            label: Text('Réimprimer',
                 style:
-                    TextStyle(color: AppColors.textPrimary, fontSize: 13)),
+                    TextStyle(color: colors.appBarForeground, fontSize: 13)),
             onPressed: vm.isReprinting
                 ? null
                 : () async {
                     final ok = await vm.reprintInvoice(invoice, lines);
                     if (!ok && context.mounted) {
-                      _showReprintError(context, vm.reprintError);
+                      _showReprintError(context, colors, vm.reprintError);
                     }
                   },
           ),
@@ -81,10 +79,11 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
     );
   }
 
-  void _showReprintError(BuildContext context, String? message) {
+  void _showReprintError(
+      BuildContext context, AppColorScheme colors, String? message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: AppColors.syncError,
+        backgroundColor: colors.error,
         content: Text('Échec de l\'impression : ${message ?? 'erreur inconnue'}'),
       ),
     );

@@ -13,11 +13,16 @@ import '../domain/services/print_service.dart';
 import '../features/backup/viewmodels/backup_view_model.dart';
 import '../features/invoice/viewmodels/invoice_entry_viewmodel.dart';
 import '../features/invoice/viewmodels/invoice_history_viewmodel.dart';
+import '../features/settings/viewmodels/theme_view_model.dart';
 
 /// Root Provider tree — order matters: each entry may read the ones
 /// declared above it.
 List<SingleChildWidget> buildProviders() {
   return [
+    // Theme mode (light/dark/system) + persistence — read by GoldBarApp.
+    ChangeNotifierProvider<ThemeViewModel>(
+      create: (_) => ThemeViewModel()..init(),
+    ),
     Provider<AppDatabase>(
       create: (_) => AppDatabase(),
       dispose: (_, db) => db.close(),

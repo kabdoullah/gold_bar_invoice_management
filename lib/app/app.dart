@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../core/theme/app_theme.dart';
 import '../domain/services/backup_service.dart';
+import '../features/settings/viewmodels/theme_view_model.dart';
 import 'di.dart';
 import 'router.dart';
 
@@ -16,18 +17,25 @@ class GoldBarApp extends StatelessWidget {
     return MultiProvider(
       providers: buildProviders(),
       child: _StartupController(
-        child: MaterialApp.router(
-          title: 'Gestion Factures Or',
-          theme: AppTheme.dark,
-          routerConfig: appRouter,
-          locale: const Locale('fr'),
-          supportedLocales: const [Locale('fr')],
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          debugShowCheckedModeBanner: false,
+        child: Builder(
+          builder: (context) {
+            final themeMode = context.watch<ThemeViewModel>().themeMode;
+            return MaterialApp.router(
+              title: 'Gestion Factures Or',
+              theme: AppTheme.light(),
+              darkTheme: AppTheme.dark(),
+              themeMode: themeMode,
+              routerConfig: appRouter,
+              locale: const Locale('fr'),
+              supportedLocales: const [Locale('fr')],
+              localizationsDelegates: const [
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              debugShowCheckedModeBanner: false,
+            );
+          },
         ),
       ),
     );

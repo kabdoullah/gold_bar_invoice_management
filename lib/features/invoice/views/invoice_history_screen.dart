@@ -22,10 +22,8 @@ class InvoiceHistoryScreen extends StatelessWidget {
     final vm = context.watch<InvoiceHistoryViewModel>();
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundPrimary,
       appBar: AppBar(
         title: const Text('Historique des factures'),
-        backgroundColor: AppColors.tableHeader,
       ),
       body: vm.isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -37,13 +35,14 @@ class InvoiceHistoryScreen extends StatelessWidget {
 
   /// Tablet: list on the left, detail pane on the right.
   Widget _buildTabletLayout(BuildContext context, InvoiceHistoryViewModel vm) {
+    final colors = AppColors.of(context);
     return Row(
       children: [
         SizedBox(
           width: 280,
           child: _buildList(context, vm, masterDetail: true),
         ),
-        const VerticalDivider(width: 1, color: AppColors.tableBorder),
+        VerticalDivider(width: 1, color: colors.border),
         Expanded(
           child: vm.selectedInvoice != null
               ? _DetailPane(vm: vm)
@@ -60,11 +59,12 @@ class InvoiceHistoryScreen extends StatelessWidget {
     InvoiceHistoryViewModel vm, {
     required bool masterDetail,
   }) {
+    final colors = AppColors.of(context);
     if (vm.savedInvoices.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'Aucune facture enregistrée.',
-          style: TextStyle(color: AppColors.textMuted),
+          style: TextStyle(color: colors.textSecondary),
         ),
       );
     }
@@ -94,6 +94,7 @@ class _DetailPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors  = AppColors.of(context);
     final invoice = vm.selectedInvoice!;
     final lines   = vm.selectedLines;
     return Column(
@@ -106,25 +107,25 @@ class _DetailPane extends StatelessWidget {
             children: [
               Text(
                 invoice.invoiceNumber,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: colors.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               TextButton.icon(
                 icon: vm.isReprinting
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColors.textPrimary),
+                            strokeWidth: 2, color: colors.textPrimary),
                       )
-                    : const Icon(Icons.print,
-                        color: AppColors.textPrimary, size: 18),
-                label: const Text('Réimprimer',
+                    : Icon(Icons.print,
+                        color: colors.textPrimary, size: 18),
+                label: Text('Réimprimer',
                     style: TextStyle(
-                        color: AppColors.textPrimary, fontSize: 13)),
+                        color: colors.textPrimary, fontSize: 13)),
                 onPressed: vm.isReprinting
                     ? null
                     : () async {
@@ -132,7 +133,7 @@ class _DetailPane extends StatelessWidget {
                         if (!ok && context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              backgroundColor: AppColors.syncError,
+                              backgroundColor: colors.error,
                               content: Text(
                                 'Échec de l\'impression : '
                                 '${vm.reprintError ?? 'erreur inconnue'}',
@@ -158,10 +159,11 @@ class _EmptyDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    final colors = AppColors.of(context);
+    return Center(
       child: Text(
         'Sélectionnez une facture.',
-        style: TextStyle(color: AppColors.textMuted),
+        style: TextStyle(color: colors.textSecondary),
       ),
     );
   }
@@ -180,6 +182,7 @@ class _HistoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final bars = invoice.barCount;
     return InkWell(
       onTap: onTap,
@@ -187,10 +190,10 @@ class _HistoryRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.backgroundTable,
+          color: colors.surface,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: selected ? AppColors.tableHeader : AppColors.tableBorder,
+            color: selected ? colors.accentAction : colors.border,
             width: selected ? 1.5 : 0.5,
           ),
         ),
@@ -202,8 +205,8 @@ class _HistoryRow extends StatelessWidget {
                 children: [
                   Text(
                     invoice.invoiceNumber,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -212,23 +215,23 @@ class _HistoryRow extends StatelessWidget {
                   Text(
                     '${NumberFormatter.date(invoice.issueDate)} · '
                     '$bars barre${bars > 1 ? 's' : ''}',
-                    style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: 12),
+                    style: TextStyle(
+                        color: colors.textSecondary, fontSize: 12),
                   ),
                 ],
               ),
             ),
             Text(
               NumberFormatter.amount(invoice.totalAmount),
-              style: const TextStyle(
-                color: AppColors.syncSuccess,
+              style: TextStyle(
+                color: colors.success,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(width: 4),
-            const Icon(Icons.chevron_right,
-                color: AppColors.textMuted, size: 18),
+            Icon(Icons.chevron_right,
+                color: colors.textSecondary, size: 18),
           ],
         ),
       ),

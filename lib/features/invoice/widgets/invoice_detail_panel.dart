@@ -26,6 +26,7 @@ class InvoiceDetailPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -37,13 +38,11 @@ class InvoiceDetailPanel extends StatelessWidget {
               Text(
                 '${invoice.location} le: '
                 '${NumberFormatter.date(invoice.issueDate)}',
-                style: const TextStyle(
-                    color: AppColors.textMuted, fontSize: 13),
+                style: TextStyle(color: colors.textSecondary, fontSize: 13),
               ),
               Text(
                 'Nombre Barres: ${invoice.barCount}',
-                style: const TextStyle(
-                    color: AppColors.textMuted, fontSize: 13),
+                style: TextStyle(color: colors.textSecondary, fontSize: 13),
               ),
             ],
           ),

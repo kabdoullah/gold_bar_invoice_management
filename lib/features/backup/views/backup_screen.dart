@@ -85,8 +85,9 @@ class _BackupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Card(
-      color: AppColors.backgroundTable,
+      color: colors.surface,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -94,13 +95,12 @@ class _BackupCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.cloud_upload_outlined,
-                    color: AppColors.textPrimary),
+                Icon(Icons.cloud_upload_outlined, color: colors.textPrimary),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Sauvegarde Google Drive',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -110,7 +110,7 @@ class _BackupCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'Dernière sauvegarde : ${vm.lastBackupLabel ?? '…'}',
-              style: const TextStyle(color: AppColors.textMuted),
+              style: TextStyle(color: colors.textSecondary),
             ),
             const SizedBox(height: 16),
             if (vm.backupPhase == BackupPhase.error &&
@@ -176,8 +176,9 @@ class _RestoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Card(
-      color: AppColors.backgroundTable,
+      color: colors.surface,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -185,19 +186,19 @@ class _RestoreCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.restore, color: AppColors.textPrimary),
+                Icon(Icons.restore, color: colors.textPrimary),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Restaurer depuis Drive',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.refresh, color: AppColors.textMuted),
+                  icon: Icon(Icons.refresh, color: colors.textSecondary),
                   tooltip: 'Actualiser',
                   onPressed: vm.isWorking ? null : vm.loadAvailableBackups,
                 ),
@@ -205,9 +206,9 @@ class _RestoreCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             if (vm.availableBackups.isEmpty)
-              const Text(
+              Text(
                 'Aucune sauvegarde disponible sur Drive.',
-                style: TextStyle(color: AppColors.textMuted),
+                style: TextStyle(color: colors.textSecondary),
               )
             else
               RadioGroup<DriveBackupFile>(
@@ -219,15 +220,15 @@ class _RestoreCard extends StatelessWidget {
                       value: f,
                       title: Text(
                         f.fileName,
-                        style: const TextStyle(
-                            color: AppColors.textPrimary, fontSize: 13),
+                        style: TextStyle(
+                            color: colors.textPrimary, fontSize: 13),
                       ),
                       subtitle: Text(
                         _formatDate(f.createdAt),
-                        style: const TextStyle(
-                            color: AppColors.textMuted, fontSize: 12),
+                        style: TextStyle(
+                            color: colors.textSecondary, fontSize: 12),
                       ),
-                      activeColor: AppColors.accentCarat,
+                      activeColor: colors.accentCarat,
                       contentPadding: EdgeInsets.zero,
                     ),
                   ).toList(),
@@ -299,6 +300,7 @@ class _RestoreButton extends StatelessWidget {
   }
 
   Future<void> _confirmRestore(BuildContext context) async {
+    final colors = AppColors.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -315,8 +317,7 @@ class _RestoreButton extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-                backgroundColor: AppColors.syncError),
+            style: FilledButton.styleFrom(backgroundColor: colors.error),
             child: const Text('Restaurer'),
           ),
         ],
@@ -337,27 +338,27 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.syncError.withValues(alpha: 0.12),
+        color: colors.error.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: AppColors.syncError.withValues(alpha: 0.4)),
+        border: Border.all(color: colors.error.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: AppColors.syncError, size: 18),
+          Icon(Icons.error_outline, color: colors.error, size: 18),
           const SizedBox(width: 8),
           Expanded(
             child: Text(message,
-                style: const TextStyle(
-                    color: AppColors.syncError, fontSize: 12)),
+                style: TextStyle(color: colors.error, fontSize: 12)),
           ),
           if (onRetry != null)
             TextButton(
               onPressed: onRetry,
-              child: const Text('Réessayer',
-                  style: TextStyle(color: AppColors.syncError)),
+              child: Text('Réessayer',
+                  style: TextStyle(color: colors.error)),
             ),
         ],
       ),
@@ -371,21 +372,19 @@ class _SuccessBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.syncSuccess.withValues(alpha: 0.12),
+        color: colors.success.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),
-        border:
-            Border.all(color: AppColors.syncSuccess.withValues(alpha: 0.4)),
+        border: Border.all(color: colors.success.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_outline,
-              color: AppColors.syncSuccess, size: 18),
+          Icon(Icons.check_circle_outline, color: colors.success, size: 18),
           const SizedBox(width: 8),
-          Text(label,
-              style: const TextStyle(color: AppColors.syncSuccess)),
+          Text(label, style: TextStyle(color: colors.success)),
         ],
       ),
     );
@@ -397,18 +396,17 @@ class _WarningNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        Icon(Icons.warning_amber_rounded,
-            color: AppColors.draftWarning, size: 16),
-        SizedBox(width: 6),
+      children: [
+        Icon(Icons.warning_amber_rounded, color: colors.warning, size: 16),
+        const SizedBox(width: 6),
         Expanded(
           child: Text(
             'La restauration remplace toutes les factures enregistrées. '
             'Les brouillons ne sont pas affectés.',
-            style:
-                TextStyle(color: AppColors.textMuted, fontSize: 12),
+            style: TextStyle(color: colors.textSecondary, fontSize: 12),
           ),
         ),
       ],

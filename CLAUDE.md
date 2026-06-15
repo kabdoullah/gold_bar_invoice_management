@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Flutter mobile app for managing gold bar sale invoices. Single operator, single-user, **offline-first**. Replaces a desktop application the client is used to — the UI must be dense, tabular, and faithful to the original (dark theme, FR number formatting).
+Flutter mobile app for managing gold bar sale invoices. Single operator, single-user, **offline-first**. Replaces a desktop application the client is used to — the UI must be dense, tabular, and faithful to the original (FR number formatting). Light/dark/system theme is user-toggleable and persisted; the dark palette is the default reference.
 
 **Current state:** Google Drive backup fully implemented and tested on physical device. `schemaVersion = 2`. The single-screen entry + history-drawer UX is **implemented** (commit "single-screen entry UX") — `AppShell` + `InvoiceEntryScreen` + `InvoiceHistoryScreen` + `InvoiceDetailScreen` (read-only). The legacy 3-screen flow (List → Form → Detail) and its viewmodels are gone.
 
@@ -29,16 +29,17 @@ dart run build_runner build --delete-conflicting-outputs   # regenerate Drift + 
 - Routing: GoRouter; DI via Provider tree in `app/di.dart`
 - FR number formatting: `intl`
 - `connectivity_plus` — pre-backup connectivity check only
-- `shared_preferences` — stores `last_backup_at` timestamp
+- `shared_preferences` — stores `last_backup_at` timestamp + `theme_mode` choice
+- `flutter_native_splash` + `flutter_launcher_icons` — generate splash screen and app icon (config in `pubspec.yaml`)
 
 ## Architecture — Strict MVVM, feature-first
 
 ```
 lib/
 ├── core/
-│   ├── constants/   # app_colors.dart, business_constants.dart, prefs_keys.dart
+│   ├── constants/   # app_colors.dart, app_config.dart, business_constants.dart, prefs_keys.dart
 │   ├── errors/      # business_exceptions.dart, backup_exceptions.dart
-│   ├── theme/
+│   ├── theme/       # app_theme.dart — light + dark ThemeData
 │   └── utils/       # number_formatter.dart, responsive.dart
 ├── data/
 │   ├── local/       # drift database, DAOs (InvoiceDao, InvoiceLineDao), table defs
@@ -52,8 +53,9 @@ lib/
 │   └── services/    # GoldBarCalculatorService, PrintService, BackupService
 ├── features/
 │   ├── invoice/     # viewmodels / views / widgets
-│   └── backup/      # BackupViewModel, BackupScreen
-└── app/             # app.dart, router.dart, di.dart
+│   ├── backup/      # BackupViewModel, BackupScreen
+│   └── settings/    # ThemeViewModel, ThemeToggleButton
+└── app/             # app.dart, app_shell.dart, router.dart, di.dart
 ```
 
 Layering rules (non-negotiable):
@@ -67,6 +69,7 @@ Layering rules (non-negotiable):
 ### Provider scoping
 
 `di.dart` (`buildProviders()`) provides everything globally — order matters, each entry may `read` the ones above it:
+- `ThemeViewModel` (`..init()` called at creation) — read by `GoldBarApp` to drive `MaterialApp.themeMode`
 - `AppDatabase`, `GoldBarCalculatorService`, `PrintService`
 - `IInvoiceRepository` (impl: `InvoiceRepositoryImpl`)
 - `ExportService`, `ImportService`, `GoogleDriveService`, `BackupService`
@@ -105,12 +108,17 @@ The 4 formulas, applied in order:
 
 ```dart
 density   = truncate2(grossWeight / waterWeight);
-carat     = truncate2((density - 10.51) * 52.838 / density);  // A=10.51 alloy density, B=52.838
-unitPrice = (basePrice / 22) * carat;
-amount    = unitPrice * grossWeight;
+carat     = float32(truncate2((density - 10.51) * 52.838 / density));  // A=10.51 alloy density, B=52.838
+unitPrice = (basePrice / 22) * carat;            // full double
+amount    = round2(unitPrice * grossWeight);     // rounded to cents at calc time
 ```
 
-**Truncation is mandatory, not rounding.** `truncate2(x) = (x*100).truncateToDouble()/100`. Without it the verification data below is NOT reproducible: 30.22/1.63 gives raw density 18.53988 → must become 18.53 (not 18.54), raw carat 22.8849 → expected 22.86 (truncated from 22.8688 computed on truncated density). unitPrice and amount keep full double precision; rounding only at display.
+**Two fidelity rules — both required to reproduce the desktop TO THE CENT** (all five reference lines + total below match exactly; verified by the unit tests):
+
+1. **Truncation, not rounding**, on density and carat. `truncate2(x) = (x*100).truncateToDouble()/100`. 30.22/1.63 → raw density 18.53988 must become 18.53 (not 18.54); raw carat 22.8688 → 22.86 (not 22.87).
+2. **Carat is cast to 32-bit float** after truncation (`float32(x)` via `Float32List`). The old desktop app held carat in a single-precision `float`, so 22.32 is really `22.31999969…`. That tiny deviation, carried into a `double` unitPrice × gross and rounded to cents, is what produces the desktop amounts. Pure-`double` carat is off by up to 0.42/line, 0.50 on the total — close but not faithful. The float32 carat displays as "22.32" because `NumberFormatter.carat()` rounds.
+
+`unitPrice` keeps full double precision (it is the operand of the amount product); `amount` is `round2`-ed at calc time (not just display) so summed line totals reproduce the desktop total exactly.
 
 Verification data (basePrice = 70200) — unit tests must match these exactly:
 
@@ -197,6 +205,7 @@ All `DateTime` as ISO 8601 UTC; all `double` at full precision. Drafts excluded.
 ## UI Conventions
 
 - Dark palette in `core/constants/app_colors.dart`: background `0xFF1A1A2E`, table bg `0xFF16213E`, header `0xFF0F3460`, carat accent red `0xFFE94560`, border `0xFF2D3561`
+- Theme: light + dark `ThemeData` in `core/theme/app_theme.dart`; `ThemeViewModel` (`features/settings/`) holds `ThemeMode` (light/dark/system), persisted under `PrefsKeys.themeMode`. `ThemeToggleButton` toggles it. `GoldBarApp` reads the VM for `MaterialApp.themeMode`
 - **Carat column always red** (`AppColors.accentCarat`); Base column dimmed (`AppColors.textMuted`)
 - Numbers: use `NumberFormatter` named methods — `amount()`, `weight()`, `carat()`, `density()`, `unitPrice()`, `date()`. Do NOT call a generic `.format()` — no such method exists. Internally strips intl's U+202F narrow no-break space (fr_FR grouping) because PDF base fonts can't encode it.
 - Responsive: `core/utils/responsive.dart` — mobile < 600 px gets horizontally scrollable table, tablet ≥ 600 px gets full-width table

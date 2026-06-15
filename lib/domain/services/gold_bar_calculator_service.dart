@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../core/constants/business_constants.dart';
 import '../../core/errors/business_exceptions.dart';
 import '../entities/invoice_line_preview.dart';
@@ -5,16 +7,44 @@ import '../entities/invoice_line_preview.dart';
 /// Encapsulates the four valuation formulas for a gold bar, applied in
 /// order: density → carat → unitPrice → amount.
 ///
-/// Faithful to the original desktop software: density and carat are
-/// TRUNCATED (not rounded) to 2 decimals before being fed into the next
-/// formula. Without this the verification capture data cannot be
-/// reproduced (e.g. line 30.22/1.63: raw carat 22.88 vs expected 22.86,
-/// amount off by ~2 400). unitPrice and amount keep full precision and
-/// are rounded only at display time.
+/// Reproduces the original desktop software TO THE CENT. Two fidelity
+/// rules, both verified against the client's capture data (see the unit
+/// tests — all five reference lines match exactly, total = 50 006 468.85):
+///
+/// 1. density and carat are TRUNCATED (not rounded) to 2 decimals before
+///    feeding the next formula (e.g. 30.22/1.63 → density 18.53, not
+///    18.54; carat 22.86, not 22.87).
+/// 2. the carat is then stored as a 32-bit FLOAT before computing
+///    unitPrice. The desktop app (an older single-precision codebase)
+///    held carat in a `float`, so 22.32 is really 22.31999969… That tiny
+///    deviation, carried into a double unitPrice × gross and rounded to
+///    cents, is exactly what produces the desktop amounts. Computing the
+///    carat purely in `double` is off by up to 0.42 per line / 0.50 on
+///    the total — close, but not faithful.
+///
+/// unitPrice keeps full double precision (it is the operand of the amount
+/// product); amount is rounded to 2 decimals at the end, matching the
+/// desktop's per-line cent rounding.
 class GoldBarCalculatorService {
   /// Truncates toward zero at 2 decimals: 18.53988 → 18.53 (never 18.54).
   static double _truncate2(double value) =>
       (value * 100).truncateToDouble() / 100;
+
+  /// Rounds half-up at 2 decimals: 30687031.0483 → 30687031.05.
+  static double _round2(double value) => (value * 100).round() / 100;
+
+  /// Reusable single-element buffer for the 32-bit float round-trip.
+  /// Safe to reuse: the main isolate is single-threaded and `compute()`
+  /// runs in a separate isolate with its own copy of this static.
+  static final Float32List _f32 = Float32List(1);
+
+  /// Casts [value] to 32-bit float precision and back to double, matching
+  /// how the original desktop software stored carat in a `float`.
+  /// Example: 22.32 → 22.319999694824219.
+  static double _toFloat32(double value) {
+    _f32[0] = value;
+    return _f32[0];
+  }
 
   /// Calculates the density of a gold bar using the hydrostatic
   /// (Archimedes) method.
@@ -48,13 +78,17 @@ class GoldBarCalculatorService {
 
   /// Calculates the gold purity in carats from the measured density.
   ///
-  /// Formula: carat = truncate2((density - A) × B / density)
+  /// Formula: carat = float32(truncate2((density - A) × B / density))
   /// where A = 10.51 (reference alloy density)
   /// and   B = 52.838 (conversion factor)
   ///
   /// The result is truncated to 2 decimals, matching the original
-  /// software (22.3255 → 22.32, not 22.33). The truncated carat is what
-  /// feeds [calculateUnitPrice].
+  /// software (22.3255 → 22.32, not 22.33), then cast to 32-bit float
+  /// precision because the desktop app stored carat in a `float`. The
+  /// returned value is therefore NOT exactly the 2-decimal number
+  /// (22.32 → 22.319999694…); it displays as "22.32" via
+  /// `NumberFormatter.carat()`, but feeds [calculateUnitPrice] at float
+  /// precision so the line amount reproduces the desktop to the cent.
   ///
   /// Example: density = 18.20 → (18.20 - 10.51) × 52.838 / 18.20 = 22.32
   ///
@@ -62,7 +96,7 @@ class GoldBarCalculatorService {
   double calculateCarat(double density) {
     const a = BusinessConstants.referenceAlloyDensity;
     const b = BusinessConstants.caratConversionFactor;
-    return _truncate2((density - a) * b / density);
+    return _toFloat32(_truncate2((density - a) * b / density));
   }
 
   /// Calculates the unit price per gram ("U/BASE") from the market base
@@ -87,14 +121,18 @@ class GoldBarCalculatorService {
 
   /// Calculates the total amount for one invoice line (one gold bar).
   ///
-  /// Formula: amount = unitPrice × grossWeight
+  /// Formula: amount = round2(unitPrice × grossWeight)
   ///
-  /// Example: 71221.09 × 430.87 = 30 687 031.02
+  /// Rounded to 2 decimals here (not just at display) to match the
+  /// desktop's per-line cent rounding — line totals are summed from these
+  /// stored values, so the invoice total reproduces the desktop exactly.
   ///
-  /// [unitPrice] calculated by [calculateUnitPrice]
+  /// Example: 71221.0899… × 430.87 = 30 687 031.02
+  ///
+  /// [unitPrice] full-precision result of [calculateUnitPrice]
   /// [grossWeight] weight of the bar in grams
   double calculateAmount(double unitPrice, double grossWeight) {
-    return unitPrice * grossWeight;
+    return _round2(unitPrice * grossWeight);
   }
 
   /// Runs the four formulas in order and returns the transient preview

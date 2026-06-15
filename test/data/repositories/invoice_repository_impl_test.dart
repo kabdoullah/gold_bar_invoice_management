@@ -56,15 +56,17 @@ void main() {
 
       expect(line.barNumber, 1);
       expect(line.density, 18.20);
-      expect(line.carat, 22.32);
+      // carat stored at float32 precision (22.32 → 22.31999969…), displays
+      // as 22.32 after rounding — see GoldBarCalculatorService.
+      expect(line.carat, closeTo(22.32, 0.001));
       expect(line.unitPrice, closeTo(71221.09, 0.01));
-      expect(line.amount, closeTo(30687031.02, 0.5));
+      expect(line.amount, 30687031.02); // exact desktop match
 
       final invoice = await repo.getInvoice(id);
       expect(invoice?.barCount, 1);
       expect(invoice?.totalGrossWeight, closeTo(430.87, 0.001));
       expect(invoice?.totalWaterWeight, closeTo(23.67, 0.001));
-      expect(invoice?.totalAmount, closeTo(30687031.02, 0.5));
+      expect(invoice?.totalAmount, 30687031.02); // exact desktop match
     });
 
     test('full capture invoice: 5 lines reach the expected totals', () async {
@@ -84,7 +86,7 @@ void main() {
       expect(invoice?.barCount, 5);
       expect(invoice?.totalGrossWeight, closeTo(698.35, 0.001));
       expect(invoice?.totalWaterWeight, closeTo(38.21, 0.001));
-      expect(invoice?.totalAmount, closeTo(50006468.85, 1.0));
+      expect(invoice?.totalAmount, closeTo(50006468.85, 0.001)); // exact desktop total
     });
 
     test('rejects lines on a saved invoice', () async {

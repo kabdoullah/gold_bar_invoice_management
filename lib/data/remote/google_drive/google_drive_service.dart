@@ -5,6 +5,8 @@ import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
+import '../../../core/constants/app_config.dart';
+
 /// A backup file entry from Google Drive.
 class DriveBackupFile {
   const DriveBackupFile({
@@ -56,7 +58,11 @@ class GoogleDriveService {
   /// reuse that session instead of popping an interactive dialog every visit.
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
-    await GoogleSignIn.instance.initialize();
+    // Must pass the same serverClientId as main.dart — calling initialize()
+    // bare on Android throws "serverClientId must be provided on Android".
+    await GoogleSignIn.instance.initialize(
+      serverClientId: AppConfig.googleServerClientId,
+    );
     try {
       await GoogleSignIn.instance.attemptLightweightAuthentication();
     } catch (_) {

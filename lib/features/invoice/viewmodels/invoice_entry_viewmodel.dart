@@ -193,7 +193,7 @@ class InvoiceEntryViewModel extends ChangeNotifier {
       final lines = _lines;
       await _printService.printInvoice(saved ?? draft, lines);
       // ignore: unawaited_futures
-      _backupService?.autoBackupIfConnected();
+      //_backupService?.autoBackupIfConnected();
       _resetForNewInvoice();
       // ignore: unawaited_futures
       refreshBackupStatus();

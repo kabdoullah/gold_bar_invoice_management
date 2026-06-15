@@ -7,14 +7,28 @@ import '../../../core/constants/prefs_keys.dart';
 /// Persists the user's choice in SharedPreferences under [PrefsKeys.themeMode].
 class ThemeViewModel extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
+  bool _disposed = false; // Track lifecycle for safe notify across async gaps
 
   ThemeMode get themeMode => _themeMode;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  void _safeNotify() {
+    if (_disposed) return; // Never notify after dispose
+    notifyListeners();
+  }
 
   /// Call once at app startup. Loads the persisted choice.
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
-    _themeMode = _decode(prefs.getString(PrefsKeys.themeMode));
-    notifyListeners();
+    final loaded = _decode(prefs.getString(PrefsKeys.themeMode));
+    if (loaded == _themeMode) return; // Skip redundant rebuild (system→system)
+    _themeMode = loaded;
+    _safeNotify();
   }
 
   /// Toggles between light and dark.
@@ -23,7 +37,7 @@ class ThemeViewModel extends ChangeNotifier {
     _themeMode =
         _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
     await _persist();
-    notifyListeners();
+    _safeNotify();
   }
 
   /// Sets an explicit mode.
@@ -31,7 +45,7 @@ class ThemeViewModel extends ChangeNotifier {
     if (mode == _themeMode) return;
     _themeMode = mode;
     await _persist();
-    notifyListeners();
+    _safeNotify();
   }
 
   Future<void> _persist() async {

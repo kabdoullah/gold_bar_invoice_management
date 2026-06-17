@@ -133,7 +133,7 @@ class _InvoiceEntryScreenState extends State<InvoiceEntryScreen> {
           ),
           const SizedBox(height: 8),
           if (vm.invoice != null)
-            TotalsWidget(invoice: vm.invoice!, lines: vm.lines),
+            TotalsWidget(invoice: vm.invoice!, global: vm.globalCaratResult),
           const SizedBox(height: 16),
         ],
         _saveButton(vm),
@@ -161,7 +161,7 @@ class _InvoiceEntryScreenState extends State<InvoiceEntryScreen> {
                 ),
                 const SizedBox(height: 8),
                 if (vm.invoice != null)
-                  TotalsWidget(invoice: vm.invoice!, lines: vm.lines),
+                  TotalsWidget(invoice: vm.invoice!, global: vm.globalCaratResult),
                 const SizedBox(height: 16),
               ],
               _saveButton(vm),

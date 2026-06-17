@@ -25,7 +25,7 @@ void main() {
           ..where((i) => i.id.equals(id)))
         .getSingle();
 
-    expect(row.location, 'Bamako');
+    expect(row.location, "Côte d'Ivoire");
     expect(row.status, 'draft');
     expect(row.barCount, 0);
     expect(row.totalAmount, 0);

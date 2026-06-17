@@ -17,8 +17,8 @@ abstract final class BusinessConstants {
   /// unitPrice = (basePrice / caratBase) × carat
   static const double caratBase = 22.0;
 
-  /// Default invoice location.
-  static const String defaultLocation = 'Bamako';
+  /// Default invoice location, shown in the header and PDF.
+  static const String defaultLocation = "Côte d'Ivoire";
 
   /// Above this line count, batch recalculation moves into an isolate
   /// via `compute()`.

@@ -4,16 +4,19 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/number_formatter.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../domain/entities/invoice.dart';
-import '../../../domain/entities/invoice_line.dart';
+import '../../../domain/services/gold_bar_calculator_service.dart';
 
 /// "Récapitulatif" card shown under the table: the four column totals in an
 /// equal-width grid (4-in-a-row on tablet, 2×2 on mobile) plus the grand
-/// total amount emphasized below a divider. Carat total always red.
+/// total amount emphasized below a divider. Carat Général always red.
+///
+/// "Densité Totale" / "Carat Général" come from [global], recomputed by the
+/// viewmodel from the invoice's raw totals — never a sum of per-line values.
 class TotalsWidget extends StatelessWidget {
-  const TotalsWidget({super.key, required this.invoice, required this.lines});
+  const TotalsWidget({super.key, required this.invoice, required this.global});
 
   final Invoice           invoice;
-  final List<InvoiceLine> lines;
+  final GlobalCaratResult global;
 
   @override
   Widget build(BuildContext context) {
@@ -22,8 +25,9 @@ class TotalsWidget extends StatelessWidget {
     final stats = <Widget>[
       _Stat('Poids Total', NumberFormatter.weight(invoice.totalGrossWeight)),
       _Stat('Eaux Total', NumberFormatter.weight(invoice.totalWaterWeight)),
-      _Stat('Densité Total', NumberFormatter.density(lines.totalDensity)),
-      _Stat('Carat Total', NumberFormatter.carat(lines.totalCarat), isRed: true),
+      _Stat('Densité Totale', NumberFormatter.density(global.globalDensity)),
+      _Stat('Carat Général', NumberFormatter.carat(global.globalCarat),
+          isRed: true),
     ];
 
     final grid = Responsive.isTablet(context)

@@ -75,7 +75,11 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
           ),
         ],
       ),
-      body: InvoiceDetailPanel(invoice: invoice, lines: lines),
+      body: InvoiceDetailPanel(
+        invoice: invoice,
+        lines: lines,
+        global: vm.globalCaratResult,
+      ),
     );
   }
 

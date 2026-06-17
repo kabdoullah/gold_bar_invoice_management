@@ -22,7 +22,7 @@ void main() {
   Future<int> createDraft({double basePrice = 70200}) async {
     final invoice = await repo.createDraft(
       issueDate: DateTime(2026, 6, 6),
-      location: 'Bamako',
+      location: "Côte d'Ivoire",
       basePrice: basePrice,
     );
     return invoice.id;

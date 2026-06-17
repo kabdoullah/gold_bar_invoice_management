@@ -31,7 +31,7 @@ List<SingleChildWidget> buildProviders() {
       create: (_) => GoldBarCalculatorService(),
     ),
     Provider<PrintService>(
-      create: (_) => PrintService(),
+      create: (ctx) => PrintService(ctx.read<GoldBarCalculatorService>()),
     ),
     Provider<IInvoiceRepository>(
       create: (ctx) => InvoiceRepositoryImpl(
@@ -80,6 +80,7 @@ List<SingleChildWidget> buildProviders() {
       create: (ctx) => InvoiceHistoryViewModel(
         ctx.read<IInvoiceRepository>(),
         ctx.read<PrintService>(),
+        ctx.read<GoldBarCalculatorService>(),
       ),
     ),
   ];

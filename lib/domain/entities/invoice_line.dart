@@ -39,12 +39,3 @@ abstract class InvoiceLine with _$InvoiceLine {
     required double amount,
   }) = _InvoiceLine;
 }
-
-/// Raw-sum totals over a set of lines, used by the on-screen totals block
-/// and the PDF. Density/carat are per-bar values not stored on [Invoice],
-/// so they are summed on the fly here (single source of truth).
-extension InvoiceLineTotals on List<InvoiceLine> {
-  double get totalDensity => fold(0.0, (sum, line) => sum + line.density);
-
-  double get totalCarat => fold(0.0, (sum, line) => sum + line.carat);
-}

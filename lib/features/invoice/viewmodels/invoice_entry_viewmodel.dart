@@ -64,6 +64,20 @@ class InvoiceEntryViewModel extends ChangeNotifier {
 
   List<InvoiceLine> get lines => _lines;
 
+  /// Invoice-level "Densité Totale" / "Carat Général", recomputed fresh from
+  /// the draft's raw totals — never a sum/average of per-line values. Zeros
+  /// when no draft exists yet (empty entry screen).
+  GlobalCaratResult get globalCaratResult {
+    final inv = _draft;
+    if (inv == null) {
+      return const GlobalCaratResult(globalDensity: 0, globalCarat: 0);
+    }
+    return _calculator.calculateGlobalCarat(
+      totalGrossWeight: inv.totalGrossWeight,
+      totalWaterWeight: inv.totalWaterWeight,
+    );
+  }
+
   double? get basePrice => _basePrice;
 
   bool get isSavingAndPrinting => _isSavingAndPrinting;

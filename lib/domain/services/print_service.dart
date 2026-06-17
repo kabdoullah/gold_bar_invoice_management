@@ -2,13 +2,19 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import '../../core/constants/business_constants.dart';
 import '../../core/utils/number_formatter.dart';
 import '../entities/invoice.dart';
 import '../entities/invoice_line.dart';
+import 'gold_bar_calculator_service.dart';
 
 /// Generates a PDF faithful to the original desktop software layout and
 /// opens the native print/share sheet via [Printing.layoutPdf].
 class PrintService {
+  PrintService(this._calculator);
+
+  final GoldBarCalculatorService _calculator;
+
   static final _headerStyle = pw.TextStyle(
     fontSize: 9,
     fontWeight: pw.FontWeight.bold,
@@ -72,7 +78,8 @@ class PrintService {
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Text(
-              '${invoice.location} le: ${NumberFormatter.date(invoice.issueDate)}',
+              '${BusinessConstants.defaultLocation} le: '
+              '${NumberFormatter.date(invoice.issueDate)}',
               style: _cellStyle,
             ),
             pw.Text('Nombre Barres: ${invoice.barCount}', style: _cellStyle),
@@ -125,6 +132,12 @@ class PrintService {
   }
 
   pw.Widget _buildTotals(Invoice invoice, List<InvoiceLine> lines) {
+    // Invoice-level density/carat recomputed from raw totals — never a sum
+    // of per-line values (mirrors the in-app TotalsWidget).
+    final global = _calculator.calculateGlobalCarat(
+      totalGrossWeight: invoice.totalGrossWeight,
+      totalWaterWeight: invoice.totalWaterWeight,
+    );
     // 2 rows × 3 columns grid. The 6th cell is empty.
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -135,7 +148,7 @@ class PrintService {
             _totalCell(
                 'Poids Total: ${NumberFormatter.weight(invoice.totalGrossWeight)}'),
                 _totalCell(
-              'Carat Total: ${NumberFormatter.carat(lines.totalCarat)}',
+              'Carat Général: ${NumberFormatter.carat(global.globalCarat)}',
               style: _totalCaratStyle,
             ),
             _totalCell(
@@ -151,7 +164,7 @@ class PrintService {
               'Eaux Total: ${NumberFormatter.weight(invoice.totalWaterWeight)}',
             ),
              _totalCell(
-              'Densité Total: ${NumberFormatter.density(lines.totalDensity)}',
+              'Densité Totale: ${NumberFormatter.density(global.globalDensity)}',
             ),
             pw.Expanded(child: pw.SizedBox()),
           ],

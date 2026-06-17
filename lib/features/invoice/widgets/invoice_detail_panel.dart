@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/business_constants.dart';
 import '../../../core/utils/number_formatter.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../domain/entities/invoice.dart';
 import '../../../domain/entities/invoice_line.dart';
+import '../../../domain/services/gold_bar_calculator_service.dart';
 import 'invoice_table.dart';
 import 'totals_widget.dart';
 
@@ -19,10 +21,12 @@ class InvoiceDetailPanel extends StatelessWidget {
     super.key,
     required this.invoice,
     required this.lines,
+    required this.global,
   });
 
   final Invoice           invoice;
   final List<InvoiceLine> lines;
+  final GlobalCaratResult global;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +40,7 @@ class InvoiceDetailPanel extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${invoice.location} le: '
+                '${BusinessConstants.defaultLocation} le: '
                 '${NumberFormatter.date(invoice.issueDate)}',
                 style: TextStyle(color: colors.textSecondary, fontSize: 13),
               ),
@@ -52,7 +56,7 @@ class InvoiceDetailPanel extends StatelessWidget {
             scrollable: !Responsive.isTablet(context),
           ),
           const SizedBox(height: 8),
-          TotalsWidget(invoice: invoice, lines: lines),
+          TotalsWidget(invoice: invoice, global: global),
         ],
       ),
     );

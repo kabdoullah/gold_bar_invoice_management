@@ -147,7 +147,11 @@ class _DetailPane extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: InvoiceDetailPanel(invoice: invoice, lines: lines),
+          child: InvoiceDetailPanel(
+            invoice: invoice,
+            lines: lines,
+            global: vm.globalCaratResult,
+          ),
         ),
       ],
     );

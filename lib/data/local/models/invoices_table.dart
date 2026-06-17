@@ -9,7 +9,8 @@ class Invoices extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get invoiceNumber => text().unique()();
   DateTimeColumn get issueDate => dateTime()();
-  TextColumn get location => text().withDefault(const Constant('Bamako'))();
+  TextColumn get location =>
+      text().withDefault(const Constant("Côte d'Ivoire"))();
   RealColumn get basePrice => real()();
 
   /// 'draft' | 'saved' — see domain `InvoiceStatus.dbValue`.

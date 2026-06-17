@@ -135,6 +135,47 @@ class GoldBarCalculatorService {
     return _round2(unitPrice * grossWeight);
   }
 
+  /// Calculates the invoice-level "Densité Totale" and "Carat Général".
+  ///
+  /// CRITICAL BUSINESS RULE — confirmed explicitly by the client:
+  /// this is NOT a sum or average of the per-line density/carat values. It
+  /// is recalculated from scratch using the invoice's raw weight totals.
+  ///
+  /// Unlike the per-line path, the totals row uses plain ROUNDING (not the
+  /// truncation + 32-bit-float fidelity of [calculateDensity]/
+  /// [calculateCarat]). The carat is computed from the already-rounded
+  /// density, which is what reproduces the client's reference total:
+  ///
+  ///   globalDensity = round2(totalGrossWeight / totalWaterWeight)
+  ///   globalCarat   = round2((globalDensity - A) × B / globalDensity)
+  ///
+  /// Example: totalGrossWeight=698.35, totalWaterWeight=38.21
+  ///   globalDensity = round2(18.27662…) = 18.28
+  ///   globalCarat   = round2((18.28 - 10.51) × 52.838 / 18.28) = 22.46
+  /// (feeding the un-rounded density 18.27662 would give 22.45, not 22.46).
+  ///
+  /// Returns zeros for an empty invoice (either total non-positive) so the
+  /// totals row shows 0 rather than throwing.
+  ///
+  /// [totalGrossWeight] sum of all line grossWeight values in the invoice
+  /// [totalWaterWeight] sum of all line waterWeight values in the invoice
+  GlobalCaratResult calculateGlobalCarat({
+    required double totalGrossWeight,
+    required double totalWaterWeight,
+  }) {
+    if (totalGrossWeight <= 0 || totalWaterWeight <= 0) {
+      return const GlobalCaratResult(globalDensity: 0, globalCarat: 0);
+    }
+    const a = BusinessConstants.referenceAlloyDensity;
+    const b = BusinessConstants.caratConversionFactor;
+    final globalDensity = _round2(totalGrossWeight / totalWaterWeight);
+    final globalCarat = _round2((globalDensity - a) * b / globalDensity);
+    return GlobalCaratResult(
+      globalDensity: globalDensity,
+      globalCarat: globalCarat,
+    );
+  }
+
   /// Runs the four formulas in order and returns the transient preview
   /// used both by the real-time entry form and by line persistence.
   InvoiceLinePreview calculateLine({
@@ -153,4 +194,16 @@ class GoldBarCalculatorService {
       amount: amount,
     );
   }
+}
+
+/// Holds the invoice-level density and carat, calculated from raw totals —
+/// never from summing or averaging individual line values.
+class GlobalCaratResult {
+  final double globalDensity;
+  final double globalCarat;
+
+  const GlobalCaratResult({
+    required this.globalDensity,
+    required this.globalCarat,
+  });
 }

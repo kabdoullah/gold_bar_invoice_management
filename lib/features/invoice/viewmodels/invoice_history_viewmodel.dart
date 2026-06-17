@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../../../domain/entities/invoice.dart';
 import '../../../domain/entities/invoice_line.dart';
 import '../../../domain/repositories/i_invoice_repository.dart';
+import '../../../domain/services/gold_bar_calculator_service.dart';
 import '../../../domain/services/print_service.dart';
 
 /// State for [InvoiceHistoryScreen] and the read-only
@@ -14,7 +15,7 @@ import '../../../domain/services/print_service.dart';
 /// selected invoice + its lines when the detail route is opened. Reprint
 /// regenerates the PDF straight from the stored values — never recomputes.
 class InvoiceHistoryViewModel extends ChangeNotifier {
-  InvoiceHistoryViewModel(this._repo, this._printService) {
+  InvoiceHistoryViewModel(this._repo, this._printService, this._calculator) {
     _invoicesSub = _repo.watchSavedInvoices().listen((invoices) {
       _savedInvoices = invoices;
       _isLoading     = false;
@@ -22,8 +23,9 @@ class InvoiceHistoryViewModel extends ChangeNotifier {
     });
   }
 
-  final IInvoiceRepository _repo;
-  final PrintService       _printService;
+  final IInvoiceRepository       _repo;
+  final PrintService             _printService;
+  final GoldBarCalculatorService _calculator;
 
   late final StreamSubscription<List<Invoice>> _invoicesSub;
 
@@ -43,6 +45,20 @@ class InvoiceHistoryViewModel extends ChangeNotifier {
   Invoice? get selectedInvoice => _selectedInvoice;
 
   List<InvoiceLine> get selectedLines => _selectedLines;
+
+  /// Invoice-level "Densité Totale" / "Carat Général" for the selected
+  /// invoice, recomputed from its stored raw totals — never a sum of lines.
+  /// Zeros when nothing is selected.
+  GlobalCaratResult get globalCaratResult {
+    final inv = _selectedInvoice;
+    if (inv == null) {
+      return const GlobalCaratResult(globalDensity: 0, globalCarat: 0);
+    }
+    return _calculator.calculateGlobalCarat(
+      totalGrossWeight: inv.totalGrossWeight,
+      totalWaterWeight: inv.totalWaterWeight,
+    );
+  }
 
   /// True while a new selection's invoice + lines are being fetched. The
   /// previous selection stays visible meanwhile (no blank flash).

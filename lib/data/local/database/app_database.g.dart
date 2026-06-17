@@ -55,7 +55,7 @@ class $InvoicesTable extends Invoices
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultValue: const Constant('Bamako'),
+    defaultValue: const Constant("Côte d'Ivoire"),
   );
   static const VerificationMeta _basePriceMeta = const VerificationMeta(
     'basePrice',

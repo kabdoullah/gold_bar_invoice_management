@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gold_bar_invoice_management/domain/entities/invoice.dart';
 import 'package:gold_bar_invoice_management/domain/entities/invoice_line.dart';
 import 'package:gold_bar_invoice_management/domain/entities/invoice_status.dart';
+import 'package:gold_bar_invoice_management/domain/services/gold_bar_calculator_service.dart';
 import 'package:gold_bar_invoice_management/domain/services/print_service.dart';
 
 void main() {
@@ -9,7 +10,7 @@ void main() {
     id: 1,
     invoiceNumber: 'FAC-0001',
     issueDate: DateTime(2026, 6, 6),
-    location: 'Bamako',
+    location: "Côte d'Ivoire",
     basePrice: 70200,
     status: InvoiceStatus.saved,
     barCount: 1,
@@ -34,7 +35,7 @@ void main() {
   );
 
   test('buildPdf produces a non-empty single-page document', () async {
-    final pdf = PrintService().buildPdf(invoice, [line]);
+    final pdf = PrintService(GoldBarCalculatorService()).buildPdf(invoice, [line]);
     final bytes = await pdf.save();
     expect(bytes.length, greaterThan(1000));
     // %PDF magic header
@@ -57,7 +58,8 @@ void main() {
         amount: 30687031.02,
       ),
     );
-    final bytes = await PrintService().buildPdf(invoice, lines).save();
+    final bytes =
+        await PrintService(GoldBarCalculatorService()).buildPdf(invoice, lines).save();
     expect(bytes.length, greaterThan(1000));
   });
 }

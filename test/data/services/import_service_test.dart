@@ -42,7 +42,7 @@ void main() {
         'id': id,
         'invoiceNumber': number,
         'issueDate': '2026-06-06T00:00:00.000Z',
-        'location': 'Bamako',
+        'location': "Côte d'Ivoire",
         'basePrice': 70200.0,
         'status': status,
         'barCount': 1,

@@ -210,7 +210,7 @@ All `DateTime` as ISO 8601 UTC; all `double` at full precision. Drafts excluded.
 - `android/app/google-services.json` — contient les deux clients OAuth (type 1 + type 3)
 - `android/app/src/main/kotlin/com/kemogoha/goldinvoices/MainActivity.kt` — package corrigé
 - `main.dart` — `GoogleSignIn.instance.initialize(serverClientId: AppConfig.googleServerClientId)` appelé avant `runApp` (constante dans `core/constants/app_config.dart`)
-- `lib/data/remote/google_drive/google_drive_service.dart` — `_ensureInitialized()` rappelle `initialize()` et **doit aussi** passer `serverClientId`; un appel nu jette `clientConfigurationError: serverClientId must be provided on Android` (fait planter le backup en release)
+- `lib/data/remote/google_drive/google_drive_service.dart` — `_ensureInitialized()` ne **rappelle pas** `initialize()` (déjà fait une seule fois dans `main.dart` avec les bons args plateforme). Un second appel jette sur web `Bad state: init() has already been called`. Il se contente de `attemptLightweightAuthentication()` pour restaurer une session existante. (`initialize()` doit donc rester correct dans `main.dart` : `clientId` sur web, `serverClientId` sur Android.)
 
 ## Web / PWA
 

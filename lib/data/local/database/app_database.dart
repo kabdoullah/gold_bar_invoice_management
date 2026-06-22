@@ -41,6 +41,14 @@ class AppDatabase extends _$AppDatabase {
         },
       );
 
-  static QueryExecutor _openConnection() =>
-      driftDatabase(name: 'gold_bar_invoices');
+  static QueryExecutor _openConnection() => driftDatabase(
+        name: 'gold_bar_invoices',
+        // Web (PWA): Drift runs SQLite via WebAssembly. These URIs resolve
+        // against the page base href — the files ship in web/ (sqlite3.wasm,
+        // drift_worker.js). Ignored on native (mobile/desktop).
+        web: DriftWebOptions(
+          sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+          driftWorker: Uri.parse('drift_worker.js'),
+        ),
+      );
 }

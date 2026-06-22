@@ -73,7 +73,7 @@ flutter build web             # build web → build/web/ (à servir en HTTPS)
 L'app tourne aussi en PWA installable (Safari iOS → Partager → « Sur l'écran d'accueil »).
 
 Pré-requis runtime (déjà en place dans `web/`) :
-- `web/sqlite3.wasm` + `web/drift_worker.js` — Drift charge SQLite en WebAssembly dans le navigateur (sans ces fichiers, la base ne démarre pas). Versions alignées sur `drift` 2.34.0 / `sqlite3` (dart) 3.3.3.
+- `web/sqlite3.wasm` + `web/drift_worker.js` — Drift charge SQLite en WebAssembly dans le navigateur (sans ces fichiers, la base ne démarre pas). `AppDatabase._openConnection()` doit passer `web: DriftWebOptions(sqlite3Wasm, driftWorker)` à `driftDatabase()`, sinon erreur runtime « When compiling to the web, the 'web' parameter needs to be set ». Versions alignées sur `drift` 2.34.0 / `sqlite3` (dart) 3.3.3.
 - `web/index.html` — meta `google-signin-client_id`, tags PWA iOS (`apple-mobile-web-app-capable`, titre « Gold Invoices »).
 
 Spécificités web vs Android :

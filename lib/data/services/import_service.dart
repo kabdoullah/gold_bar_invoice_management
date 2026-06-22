@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
@@ -18,18 +17,11 @@ class ImportService {
 
   final AppDatabase _db;
 
-  /// Restores saved invoices from [backupFile] into Drift.
+  /// Restores saved invoices from a JSON backup [content] string into Drift.
   ///
   /// Throws [SchemaVersionMismatchException] if the backup schema differs.
   /// Throws [CorruptedBackupException] if parsing fails.
-  Future<void> importFromJson(File backupFile) async {
-    final String content;
-    try {
-      content = await backupFile.readAsString();
-    } catch (e) {
-      throw CorruptedBackupException('Cannot read file: $e');
-    }
-
+  Future<void> importFromJson(String content) async {
     final Map<String, dynamic> data;
     try {
       data = await compute(_decodeJson, content);

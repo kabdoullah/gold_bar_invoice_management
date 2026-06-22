@@ -1,14 +1,22 @@
 import 'dart:convert';
-import 'dart:io';
-
-import 'package:path_provider/path_provider.dart';
 
 import '../local/dao/invoice_dao.dart';
 import '../local/dao/invoice_line_dao.dart';
 import '../local/database/app_database.dart';
 
+/// A serialized backup: its JSON payload plus the suggested file name.
+///
+/// Platform-agnostic — holds no `dart:io` File so the same value works on
+/// mobile and on web (PWA).
+class BackupPayload {
+  const BackupPayload({required this.fileName, required this.json});
+
+  final String fileName;
+  final String json;
+}
+
 /// Serializes all saved invoices and their lines from Drift into a structured
-/// JSON backup file written to the device's temp directory.
+/// JSON backup payload (string + suggested filename).
 ///
 /// Only invoices with `status = 'saved'` are included — drafts are excluded.
 class ExportService {
@@ -18,9 +26,9 @@ class ExportService {
   final InvoiceLineDao _invoiceLineDao;
   final int _schemaVersion;
 
-  /// Exports all saved invoices + their lines to a JSON temp file.
+  /// Exports all saved invoices + their lines to a JSON payload.
   /// Filename: `gold_invoices_backup_YYYY-MM-DD_HHmmss.json`
-  Future<File> exportToJson() async {
+  Future<BackupPayload> exportToJson() async {
     final invoiceRows = await _invoiceDao.getSaved();
 
     final invoicesJson = <Map<String, dynamic>>[];
@@ -42,7 +50,6 @@ class ExportService {
       'invoiceLines': linesJson,
     };
 
-    final dir = await getTemporaryDirectory();
     final now = DateTime.now();
     final ts = '${now.year.toString().padLeft(4, '0')}-'
         '${now.month.toString().padLeft(2, '0')}-'
@@ -50,9 +57,10 @@ class ExportService {
         '${now.hour.toString().padLeft(2, '0')}'
         '${now.minute.toString().padLeft(2, '0')}'
         '${now.second.toString().padLeft(2, '0')}';
-    final file = File('${dir.path}/gold_invoices_backup_$ts.json');
-    await file.writeAsString(jsonEncode(backup));
-    return file;
+    return BackupPayload(
+      fileName: 'gold_invoices_backup_$ts.json',
+      json: jsonEncode(backup),
+    );
   }
 
   Map<String, dynamic> _invoiceToJson(InvoiceRow row) => {

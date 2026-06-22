@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Flutter mobile app for managing gold bar sale invoices. Single operator, single-user, **offline-first**. Replaces a desktop application the client is used to — the UI must be dense, tabular, and faithful to the original (FR number formatting). Light/dark/system theme is user-toggleable and persisted; the dark palette is the default reference.
+Flutter app for managing gold bar sale invoices. Single operator, single-user, **offline-first**. Replaces a desktop application the client is used to — the UI must be dense, tabular, and faithful to the original (FR number formatting). Light/dark/system theme is user-toggleable and persisted; the dark palette is the default reference.
+
+Targets Android **and web/PWA** (the client installs the PWA on an iPhone via Safari → Share → Add to Home Screen). The backup pipeline is platform-agnostic (no `dart:io` — see Web/PWA section).
 
 **Current state:** Google Drive backup fully implemented and tested on physical device. `schemaVersion = 2`. The single-screen entry + history-drawer UX is **implemented** (commit "single-screen entry UX") — `AppShell` + `InvoiceEntryScreen` + `InvoiceHistoryScreen` + `InvoiceDetailScreen` (read-only). The legacy 3-screen flow (List → Form → Detail) and its viewmodels are gone.
 
@@ -19,6 +21,8 @@ flutter test --plain-name "line 1"       # single test by name
 flutter analyze                          # lint
 dart run build_runner build --delete-conflicting-outputs   # regenerate Drift + freezed code (after table/entity changes)
 flutter build apk --release              # signed release APK → build/app/outputs/flutter-apk/app-release.apk
+flutter run -d chrome                    # run the web/PWA build
+flutter build web                        # web build → build/web/ (serve over HTTPS)
 ```
 
 **Release signing:** `android/app/build.gradle.kts` loads `android/key.properties` (gitignored) for the `release` signing config, falling back to debug keys when absent (so `flutter run --release` still works without the keystore). Keystore `android/app/upload-keystore.jks` and `key.properties` are gitignored — never commit them. Losing the keystore means the app can no longer be updated.
@@ -157,9 +161,9 @@ Three-layer backup flow:
 BackupViewModel → BackupService → ExportService / ImportService / GoogleDriveService
 ```
 
-- **ExportService** (`data/services/`): queries all saved invoices + lines from Drift, serializes to JSON, writes temp file `gold_invoices_backup_YYYY-MM-DD_HHmmss.json`
-- **ImportService** (`data/services/`): reads JSON, validates `schemaVersion`, runs a single Drift transaction (DELETE saved → INSERT from backup; drafts untouched)
-- **GoogleDriveService** (`data/remote/google_drive/`): `google_sign_in` v7 + `googleapis`; scope `drive.file` (app-created files only); folder `GoldInvoicesApp/backups/`. `DriveBackupFile` is a typed value object for listing results.
+- **ExportService** (`data/services/`): queries all saved invoices + lines from Drift, serializes to JSON, returns a `BackupPayload {fileName, json}` value object — **no file I/O, no `dart:io`** (works on web). Filename `gold_invoices_backup_YYYY-MM-DD_HHmmss.json`
+- **ImportService** (`data/services/`): `importFromJson(String content)` — validates `schemaVersion`, runs a single Drift transaction (DELETE saved → INSERT from backup; drafts untouched). Takes a JSON string, not a `File`.
+- **GoogleDriveService** (`data/remote/google_drive/`): `google_sign_in` v7 + `googleapis`; scope `drive.file` (app-created files only); folder `GoldInvoicesApp/backups/`. `uploadBackup(String fileName, List<int> bytes)`; `downloadBackup(id)` returns the JSON content as a `String` (no temp file). `DriveBackupFile` is a typed value object for listing results.
 - **BackupService** (`domain/services/`): orchestrates the above; owns `autoBackupIfConnected()` (fire-and-forget, never throws to caller). Checks `isAuthorizedSilently()` before upload to avoid background sign-in dialogs.
 
 ### Auto-backup triggers (all wired)
@@ -208,6 +212,16 @@ All `DateTime` as ISO 8601 UTC; all `double` at full precision. Drafts excluded.
 - `main.dart` — `GoogleSignIn.instance.initialize(serverClientId: AppConfig.googleServerClientId)` appelé avant `runApp` (constante dans `core/constants/app_config.dart`)
 - `lib/data/remote/google_drive/google_drive_service.dart` — `_ensureInitialized()` rappelle `initialize()` et **doit aussi** passer `serverClientId`; un appel nu jette `clientConfigurationError: serverClientId must be provided on Android` (fait planter le backup en release)
 
+## Web / PWA
+
+The app builds for web (`flutter build web` → `build/web/`) and installs as a PWA on the client's iPhone (Safari → Share → Add to Home Screen). Required runtime files live in `web/`:
+- `web/sqlite3.wasm` + `web/drift_worker.js` — Drift loads SQLite as WebAssembly in the browser. `driftDatabase(name: ...)` resolves these by their default names; **without them the DB never opens on web**. Versions track `drift` 2.34.0 / `sqlite3` (dart) 3.3.3 — re-download from the matching GitHub releases (`simolus3/drift` for the worker, `simolus3/sqlite3.dart` for the wasm) if those bump.
+- `web/index.html` — meta `google-signin-client_id` (web OAuth client), iOS PWA tags (`apple-mobile-web-app-capable`, title "Gold Invoices").
+
+Web-specific behavior (see the google_sign_in gotchas below): platform-split `initialize()` and `_resolveHeaders` use `kIsWeb`. The whole backup pipeline (Export/Import/Drive) passes `String`/bytes, never `dart:io` `File`, so it compiles and runs on web unchanged.
+
+⚠️ For web sign-in to work: in Google Cloud Console, the **Web** client (type 3) must list the serving domain under **Authorized JavaScript origins** (`https://…` in prod, `http://localhost:PORT` to test), and the app must be served over HTTPS (PWA install + OAuth require it; `localhost` excepted). In iOS standalone mode the Google OAuth popup can misbehave — validate on the real device.
+
 ## UI Conventions
 
 - Dark palette in `core/constants/app_colors.dart`: background `0xFF1A1A2E`, table bg `0xFF16213E`, header `0xFF0F3460`, carat accent red `0xFFE94560`, border `0xFF2D3561`
@@ -225,7 +239,8 @@ All `DateTime` as ISO 8601 UTC; all `double` at full precision. Drafts excluded.
 - `basePrice` is locked once an invoice has lines (`updateDraftHeader` throws) — stored line amounts would diverge from the header
 - `AppDatabase.forTesting(NativeDatabase.memory())` constructor used in all Drift tests — no file I/O needed
 - ViewModels subscribe to Drift streams in their constructor (`_repo.watchX().listen(...)`) and cancel in `dispose()` — never use `StreamBuilder` in views, drive UI from ViewModel state
-- `google_sign_in` v7 API: `GoogleSignIn.instance.initialize()` called once in `main.dart` (before `runApp`); authorization via `authorizationClient.authorizationHeaders(_scopes, promptIfNecessary: bool)` — no `GoogleSignIn(scopes: [...])` constructor style
+- `google_sign_in` v7 API: `GoogleSignIn.instance.initialize()` called once in `main.dart` (before `runApp`); authorization via `authorizationClient.authorizationHeaders(_scopes, promptIfNecessary: bool)` — no `GoogleSignIn(scopes: [...])` constructor style. **Platform-split init** (both `main.dart` and `GoogleDriveService._ensureInitialized` must match): web passes `clientId: AppConfig.googleWebClientId`, Android passes `serverClientId: AppConfig.googleServerClientId` — guarded by `kIsWeb`. Passing `serverClientId` on web is unsupported; omitting `serverClientId` on Android throws "serverClientId must be provided on Android".
+- **Web has no interactive `authenticate()`** — `_resolveHeaders` branches on `kIsWeb`: web calls `authorizationClient.authorizeScopes(_scopes)` (must be triggered by a user gesture / button tap) then re-reads headers silently; Android keeps the `authenticate(scopeHint:) → authorizationHeaders(promptIfNecessary: true)` flow.
 - `InvoiceRepositoryImpl` receives both `AppDatabase` and `GoldBarCalculatorService` — it calls the calculator internally so DAOs stay pure data-access
 - Comma input (`replaceAll(',', '.')`) needed before `double.tryParse()` for FR locale keyboards
 

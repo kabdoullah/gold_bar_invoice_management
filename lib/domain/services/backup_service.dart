@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,9 +28,12 @@ class BackupService {
   /// [onExported] is called after the local JSON file is written and before
   /// the upload starts — lets the caller show intermediate progress.
   Future<void> performBackup({VoidCallback? onExported}) async {
-    final file = await _exportService.exportToJson();
+    final payload = await _exportService.exportToJson();
     onExported?.call();
-    await _driveService.uploadBackup(file);
+    await _driveService.uploadBackup(
+      payload.fileName,
+      utf8.encode(payload.json),
+    );
     await _persistSuccess();
   }
 

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
@@ -11,27 +10,19 @@ import 'package:gold_bar_invoice_management/data/services/import_service.dart';
 void main() {
   late AppDatabase db;
   late ImportService service;
-  late Directory tempDir;
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     service = ImportService(db);
-    tempDir = Directory.systemTemp.createTempSync('import_test');
   });
 
   tearDown(() async {
     await db.close();
-    if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
   });
 
-  // Writes [backup] to a temp JSON file and returns it.
-  File backupFile(Object backup) {
-    final file = File('${tempDir.path}/backup.json');
-    file.writeAsStringSync(
-      backup is String ? backup : jsonEncode(backup),
-    );
-    return file;
-  }
+  // Serializes [backup] to a JSON string (passed straight to importFromJson).
+  String backupFile(Object backup) =>
+      backup is String ? backup : jsonEncode(backup);
 
   Map<String, dynamic> invoiceJson({
     int id = 100,

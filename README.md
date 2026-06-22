@@ -64,7 +64,27 @@ flutter test
 flutter analyze
 dart run build_runner build --delete-conflicting-outputs
 flutter build apk --release   # APK signé → build/app/outputs/flutter-apk/app-release.apk
+flutter run -d chrome         # lancer la version web (PWA)
+flutter build web             # build web → build/web/ (à servir en HTTPS)
 ```
+
+## Web / PWA (iPhone du client)
+
+L'app tourne aussi en PWA installable (Safari iOS → Partager → « Sur l'écran d'accueil »).
+
+Pré-requis runtime (déjà en place dans `web/`) :
+- `web/sqlite3.wasm` + `web/drift_worker.js` — Drift charge SQLite en WebAssembly dans le navigateur (sans ces fichiers, la base ne démarre pas). Versions alignées sur `drift` 2.34.0 / `sqlite3` (dart) 3.3.3.
+- `web/index.html` — meta `google-signin-client_id`, tags PWA iOS (`apple-mobile-web-app-capable`, titre « Gold Invoices »).
+
+Spécificités web vs Android :
+- **Auth Google** : sur web, `GoogleSignIn.initialize()` reçoit le client **Web** comme `clientId` (et non `serverClientId`, réservé à Android). Branche `kIsWeb` dans `main.dart` et `GoogleDriveService`.
+- **Autorisation Drive** : web n'a pas de `authenticate()` interactif → on appelle `authorizationClient.authorizeScopes()` (doit être déclenché par un geste utilisateur, ex. bouton). Voir `_resolveHeaders`.
+- **Pipeline backup** : export/import passent des `String`/bytes (pas de `dart:io`/`File`), donc le même code marche sur mobile et web.
+
+⚠️ Pour que le sign-in web fonctionne :
+1. Dans Google Cloud Console, client **Web** → ajouter le domaine de service aux **Origines JavaScript autorisées** (`https://…` en prod, `http://localhost:PORT` pour tester).
+2. Servir en **HTTPS** (obligatoire pour PWA installable + OAuth Google ; `localhost` excepté).
+3. En mode standalone iOS, la popup OAuth Google peut être capricieuse — à valider sur l'iPhone réel.
 
 ## Configuration Google Cloud (projet `goldinvoicesapp`)
 
@@ -81,6 +101,8 @@ La sauvegarde Drive nécessite les éléments suivants configurés dans [Google 
 | Écran de consentement | **En production** — tout compte Google peut autoriser, sans liste d'utilisateurs test |
 
 Les deux SHA-1 (debug + release) sont enregistrés sur le client Android (type 1).
+
+Pour le web/PWA, le client **Web** (type 3) sert de `clientId` ; ajouter le(s) domaine(s) de service dans ses **Origines JavaScript autorisées**.
 
 Pour obtenir le SHA-1 d'un keystore :
 ```bash

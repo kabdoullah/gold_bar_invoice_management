@@ -7,4 +7,10 @@ class AppConfig {
   /// Google Cloud project `goldinvoicesapp` (n° 833854972385).
   static const String googleServerClientId =
       '833854972385-n4p30ffkidfgnhut5de9nm63u0a5n01o.apps.googleusercontent.com';
+
+  /// OAuth client ID used on the web (PWA). google_sign_in web takes the
+  /// *web* client as `clientId` (not `serverClientId`). Same web client as
+  /// above — the JS origin of the serving domain must be authorized in the
+  /// Google Cloud Console for this client.
+  static const String googleWebClientId = googleServerClientId;
 }

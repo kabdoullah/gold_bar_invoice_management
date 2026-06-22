@@ -97,10 +97,10 @@ class BackupViewModel extends ChangeNotifier {
     _restorePhase = RestorePhase.downloading;
     notifyListeners();
     try {
-      final file = await _driveService.downloadBackup(backup.driveFileId);
+      final json = await _driveService.downloadBackup(backup.driveFileId);
       _restorePhase = RestorePhase.importing;
       notifyListeners();
-      await _importService.importFromJson(file);
+      await _importService.importFromJson(json);
       _restorePhase = RestorePhase.success;
     } catch (e) {
       _restoreError = e.toString();

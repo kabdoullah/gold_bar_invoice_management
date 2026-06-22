@@ -1,9 +1,9 @@
-import 'dart:io';
+import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
 
 import '../../../core/constants/app_config.dart';
 
@@ -58,10 +58,13 @@ class GoogleDriveService {
   /// reuse that session instead of popping an interactive dialog every visit.
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
-    // Must pass the same serverClientId as main.dart — calling initialize()
-    // bare on Android throws "serverClientId must be provided on Android".
+    // Must match main.dart's initialize args. On Android, serverClientId is
+    // required (bare call throws "serverClientId must be provided on Android").
+    // On web, the OAuth client is a *web* client supplied as clientId — passing
+    // serverClientId there is unsupported.
     await GoogleSignIn.instance.initialize(
-      serverClientId: AppConfig.googleServerClientId,
+      clientId: kIsWeb ? AppConfig.googleWebClientId : null,
+      serverClientId: kIsWeb ? null : AppConfig.googleServerClientId,
     );
     try {
       await GoogleSignIn.instance.attemptLightweightAuthentication();
@@ -113,10 +116,20 @@ class GoogleDriveService {
         .authorizationHeaders(_scopes, promptIfNecessary: false);
 
     if (headers == null && promptIfNecessary) {
-      final account =
-          await GoogleSignIn.instance.authenticate(scopeHint: _scopes);
-      headers = await account.authorizationClient
-          .authorizationHeaders(_scopes, promptIfNecessary: true);
+      if (kIsWeb) {
+        // Web has no interactive authenticate() — request scope authorization
+        // directly (must be triggered by a user gesture, e.g. a button tap),
+        // then re-read the now-granted headers.
+        await GoogleSignIn.instance.authorizationClient
+            .authorizeScopes(_scopes);
+        headers = await GoogleSignIn.instance.authorizationClient
+            .authorizationHeaders(_scopes, promptIfNecessary: false);
+      } else {
+        final account =
+            await GoogleSignIn.instance.authenticate(scopeHint: _scopes);
+        headers = await account.authorizationClient
+            .authorizationHeaders(_scopes, promptIfNecessary: true);
+      }
     }
 
     if (headers == null) {
@@ -167,14 +180,11 @@ class GoogleDriveService {
     );
   }
 
-  /// Uploads [backupFile] to `GoldInvoicesApp/backups/`.
-  /// Returns the Drive file ID of the uploaded file.
-  Future<String> uploadBackup(File backupFile) {
+  /// Uploads a backup named [fileName] with raw [bytes] to
+  /// `GoldInvoicesApp/backups/`. Returns the Drive file ID of the upload.
+  Future<String> uploadBackup(String fileName, List<int> bytes) {
     return _withDriveApi((api) async {
       final folderId = await _getBackupsFolderId(api);
-
-      final fileName = backupFile.uri.pathSegments.last;
-      final bytes = await backupFile.readAsBytes();
 
       final meta = drive.File()
         ..name = fileName
@@ -225,8 +235,8 @@ class GoogleDriveService {
     }, promptIfNecessary: false);
   }
 
-  /// Downloads the backup with [driveFileId] to a local temp file.
-  Future<File> downloadBackup(String driveFileId) {
+  /// Downloads the backup with [driveFileId] and returns its JSON content.
+  Future<String> downloadBackup(String driveFileId) {
     return _withDriveApi((api) async {
       final response = await api.files.get(
         driveFileId,
@@ -234,10 +244,7 @@ class GoogleDriveService {
       ) as drive.Media;
 
       final bytes = await _collectStream(response.stream);
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/drive_restore_$driveFileId.json');
-      await file.writeAsBytes(bytes);
-      return file;
+      return utf8.decode(bytes);
     });
   }
 

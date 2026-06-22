@@ -1,11 +1,11 @@
 {
-    "name": "gold_bar_invoice_management",
-    "short_name": "gold_bar_invoice_management",
+    "name": "Gold Invoices",
+    "short_name": "Gold Invoices",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1A1A2E",
+    "theme_color": "#1A1A2E",
+    "description": "Gestion des factures de barres d'or",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

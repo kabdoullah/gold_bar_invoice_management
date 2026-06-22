@@ -5,8 +5,6 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
 
-import '../../../core/constants/app_config.dart';
-
 /// A backup file entry from Google Drive.
 class DriveBackupFile {
   const DriveBackupFile({
@@ -58,14 +56,10 @@ class GoogleDriveService {
   /// reuse that session instead of popping an interactive dialog every visit.
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
-    // Must match main.dart's initialize args. On Android, serverClientId is
-    // required (bare call throws "serverClientId must be provided on Android").
-    // On web, the OAuth client is a *web* client supplied as clientId — passing
-    // serverClientId there is unsupported.
-    await GoogleSignIn.instance.initialize(
-      clientId: kIsWeb ? AppConfig.googleWebClientId : null,
-      serverClientId: kIsWeb ? null : AppConfig.googleServerClientId,
-    );
+    // initialize() is already called once in main.dart (before runApp) with the
+    // correct platform args. Calling it again throws on web ("init() has already
+    // been called"), so we must NOT re-initialize here — just restore any
+    // existing session.
     try {
       await GoogleSignIn.instance.attemptLightweightAuthentication();
     } catch (_) {

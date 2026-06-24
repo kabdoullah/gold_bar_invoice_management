@@ -176,7 +176,7 @@ class PrintService {
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             _totalCell(
-                'Poids Total: ${NumberFormatter.weight(invoice.totalGrossWeight)}'),
+                'Poids Total: ${NumberFormatter.weightTruncated(invoice.totalGrossWeight)}'),
             _totalCell(
               'Carat Général: ${NumberFormatter.carat(global.globalCarat)}',
               style: _totalCaratStyle,
@@ -188,7 +188,7 @@ class PrintService {
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             _totalCell(
-              'Eaux Total: ${NumberFormatter.weight(invoice.totalWaterWeight)}',
+              'Eaux Total: ${NumberFormatter.weightTruncated(invoice.totalWaterWeight)}',
             ),
             _totalCell(
               'Densité Totale: ${NumberFormatter.density(global.globalDensity)}',

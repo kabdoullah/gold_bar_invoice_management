@@ -141,18 +141,17 @@ class GoldBarCalculatorService {
   /// this is NOT a sum or average of the per-line density/carat values. It
   /// is recalculated from scratch using the invoice's raw weight totals.
   ///
-  /// Unlike the per-line path, the totals row uses plain ROUNDING (not the
-  /// truncation + 32-bit-float fidelity of [calculateDensity]/
-  /// [calculateCarat]). The carat is computed from the already-rounded
-  /// density, which is what reproduces the client's reference total:
+  /// The density is ROUNDED to 2 decimals; the carat is then TRUNCATED to 2
+  /// decimals (the desktop totals row prints a truncated Carat Général —
+  /// confirmed by the client). No 32-bit-float fidelity here, unlike the
+  /// per-line [calculateCarat] path:
   ///
   ///   globalDensity = round2(totalGrossWeight / totalWaterWeight)
-  ///   globalCarat   = round2((globalDensity - A) × B / globalDensity)
+  ///   globalCarat   = truncate2((globalDensity - A) × B / globalDensity)
   ///
   /// Example: totalGrossWeight=698.35, totalWaterWeight=38.21
   ///   globalDensity = round2(18.27662…) = 18.28
-  ///   globalCarat   = round2((18.28 - 10.51) × 52.838 / 18.28) = 22.46
-  /// (feeding the un-rounded density 18.27662 would give 22.45, not 22.46).
+  ///   globalCarat   = truncate2((18.28 - 10.51) × 52.838 / 18.28) = 22.45
   ///
   /// Returns zeros for an empty invoice (either total non-positive) so the
   /// totals row shows 0 rather than throwing.
@@ -169,7 +168,7 @@ class GoldBarCalculatorService {
     const a = BusinessConstants.referenceAlloyDensity;
     const b = BusinessConstants.caratConversionFactor;
     final globalDensity = _round2(totalGrossWeight / totalWaterWeight);
-    final globalCarat = _round2((globalDensity - a) * b / globalDensity);
+    final globalCarat = _truncate2((globalDensity - a) * b / globalDensity);
     return GlobalCaratResult(
       globalDensity: globalDensity,
       globalCarat: globalCarat,

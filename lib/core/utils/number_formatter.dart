@@ -18,6 +18,17 @@ abstract final class NumberFormatter {
 
   static String weight(double value) => _fr(value);
 
+  /// Poids tronqué à 2 décimales (PAS arrondi), pour les totaux Poids/Eaux.
+  /// Neutralise d'abord le bruit flottant des SUM() SQLite (un vrai 698,35
+  /// peut être stocké 698,34999…) en arrondissant à 4 décimales, puis
+  /// tronque à 2 : 698,34999 → 698,35 ; 698,357 → 698,35 (pas 698,36).
+  static String weightTruncated(double value) => _fr(_trunc2Safe(value));
+
+  static double _trunc2Safe(double value) {
+    final cleaned = (value * 10000).roundToDouble() / 10000; // tue le bruit float
+    return (cleaned * 100).truncateToDouble() / 100; // tronque à 2
+  }
+
   static String carat(double value) => _fr(value);
 
   static String density(double value) => _fr(value);

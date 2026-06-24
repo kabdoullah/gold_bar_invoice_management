@@ -23,8 +23,8 @@ class TotalsWidget extends StatelessWidget {
     final colors = AppColors.of(context);
 
     final stats = <Widget>[
-      _Stat('Poids Total', NumberFormatter.weight(invoice.totalGrossWeight)),
-      _Stat('Eaux Total', NumberFormatter.weight(invoice.totalWaterWeight)),
+      _Stat('Poids Total', NumberFormatter.weightTruncated(invoice.totalGrossWeight)),
+      _Stat('Eaux Total', NumberFormatter.weightTruncated(invoice.totalWaterWeight)),
       _Stat('Densité Totale', NumberFormatter.density(global.globalDensity)),
       _Stat('Carat Général', NumberFormatter.carat(global.globalCarat),
           isRed: true),

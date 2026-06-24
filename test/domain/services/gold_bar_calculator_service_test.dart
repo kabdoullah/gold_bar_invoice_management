@@ -129,13 +129,14 @@ void main() {
   group('calculateGlobalCarat — invoice-level, NOT sum of lines', () {
     final calc = GoldBarCalculatorService();
 
-    test('totals 698.35 / 38.21 → globalDensity=18.28, globalCarat=22.46', () {
+    test('totals 698.35 / 38.21 → globalDensity=18.28, globalCarat=22.45', () {
       final result = calc.calculateGlobalCarat(
         totalGrossWeight: 698.35,
         totalWaterWeight: 38.21,
       );
       expect(result.globalDensity, closeTo(18.28, 0.01));
-      expect(result.globalCarat, closeTo(22.46, 0.01));
+      // Carat Général is TRUNCATED (not rounded): raw 22.459… → 22.45.
+      expect(result.globalCarat, 22.45);
     });
 
     test('empty invoice (zero totals) → zeros, no throw', () {
@@ -149,7 +150,7 @@ void main() {
 
     test('REGRESSION GUARD: globalCarat must NOT equal sum of line carats', () {
       // Exists specifically to catch the bug the client reported (the totals
-      // row used to sum per-line carats → ~112.91 instead of ~22.46).
+      // row used to sum per-line carats → ~112.91 instead of ~22.45).
       final lineCarats = [22.32, 22.64, 22.62, 22.47, 22.86];
       final wrongSum = lineCarats.fold(0.0, (a, b) => a + b);
 
@@ -159,7 +160,7 @@ void main() {
       );
 
       expect(result.globalCarat, isNot(closeTo(wrongSum, 1.0)));
-      expect(result.globalCarat, closeTo(22.46, 0.5));
+      expect(result.globalCarat, closeTo(22.45, 0.5));
     });
   });
 }

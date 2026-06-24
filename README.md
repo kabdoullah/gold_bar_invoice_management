@@ -145,7 +145,7 @@ Encapsulé dans `GoldBarCalculatorService`, testé à la virgule près contre le
 
 ⚠️ Ne **pas** remplacer ces règles par une troncature partout : cela casse la fidélité au centime (vérifié — total faux de 0,75).
 
-Les totaux facture (`Densité Totale` / `Carat Général`) sont **recalculés depuis les totaux bruts** (jamais une somme/moyenne des lignes), avec un `round2` — voir `calculateGlobalCarat`.
+Les totaux facture (`Densité Totale` / `Carat Général`) sont **recalculés depuis les totaux bruts** (jamais une somme/moyenne des lignes) : `Densité Totale` arrondie (`round2`), `Carat Général` **tronqué** (`truncate2`) — comme l'affiche le logiciel bureau. Voir `calculateGlobalCarat`.
 
 ## Cycle de vie d'une facture
 

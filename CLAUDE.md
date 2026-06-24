@@ -229,8 +229,8 @@ Web-specific behavior (see the google_sign_in gotchas below): platform-split `in
 - **Carat column always red** (`AppColors.accentCarat`); Base column dimmed (`AppColors.textMuted`)
 - Numbers: use `NumberFormatter` named methods — `amount()`, `weight()`, `carat()`, `density()`, `unitPrice()`, `date()`. Do NOT call a generic `.format()` — no such method exists. Internally strips intl's U+202F narrow no-break space (fr_FR grouping) because PDF base fonts can't encode it.
 - Responsive: `core/utils/responsive.dart` — mobile < 600 px gets horizontally scrollable table, tablet ≥ 600 px gets full-width table
-- Invoice header: `Bamako le: [date]` + `Nombre Barres: [n]` — location (default `'Bamako'`) and issueDate editable while drafting; barCount is computed
-- PDF (PrintService): landscape, `pw.TableBorder` grid, carat column in `PdfColors.red`, same FR formatting as UI
+- Invoice header: `[location] le: [date]` + `Nombre Barres: [n]` — location (default `BusinessConstants.defaultLocation` = `"Côte d'Ivoire"`) and issueDate editable while drafting; barCount is computed. The PDF header uses `BusinessConstants.defaultLocation`, not the per-invoice `location` field.
+- PDF (PrintService): A4 landscape, `pw.TableBorder` grid, carat column in `PdfColors.red`, same FR formatting as UI. Font sizes are centralized in the `PdfFontSizes` class (top of `print_service.dart`) and are **deliberately larger than the in-app UI** (15–22pt vs 9–14pt) — printed paper must be legible at arm's length. `Montant Total` is the biggest text, on its own full-width line; the four sub-totals sit in a 2×2 grid above it.
 
 ## Implementation Gotchas
 

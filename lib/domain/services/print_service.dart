@@ -58,7 +58,7 @@ class PrintService {
     final pdf = buildPdf(invoice, lines);
     await Printing.layoutPdf(
       onLayout: (_) async => pdf.save(),
-      name: 'Facture_${invoice.invoiceNumber}.pdf',
+      name: 'Invoice_${invoice.invoiceNumber}.pdf',
     );
   }
 

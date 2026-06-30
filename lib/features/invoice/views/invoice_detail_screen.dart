@@ -5,10 +5,12 @@ import '../../../core/constants/app_colors.dart';
 import '../viewmodels/invoice_history_viewmodel.dart';
 import '../widgets/invoice_detail_panel.dart';
 
-/// Read-only view of a saved invoice — mobile only (on tablet the detail
+/// Editable view of a saved invoice — mobile only (on tablet the detail
 /// shows in the master-detail pane of [InvoiceHistoryScreen]). Reached via
 /// `push('/history/:id')`. AppBar Reprint regenerates the PDF straight from
-/// the stored values; the body is the shared [InvoiceDetailPanel].
+/// the stored values; the body is the shared, editable [InvoiceDetailPanel]
+/// (edit Poids/Eaux values only — no add/delete). Reprint is manual — the
+/// operator taps it again after editing.
 ///
 /// Stateful only to fire [InvoiceHistoryViewModel.selectInvoice] once on
 /// open; the shared history VM holds the loaded invoice + lines.

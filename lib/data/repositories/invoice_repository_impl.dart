@@ -136,6 +136,38 @@ class InvoiceRepositoryImpl implements IInvoiceRepository {
   }
 
   @override
+  Future<InvoiceLine> updateLine({
+    required int lineId,
+    required int invoiceId,
+    required double grossWeight,
+    required double waterWeight,
+  }) async {
+    final invoice = await _requireInvoice(invoiceId);
+    final values = _calculator.calculateLine(
+      grossWeight: grossWeight,
+      waterWeight: waterWeight,
+      basePrice: invoice.basePrice,
+    );
+
+    return _db.transaction(() async {
+      await _db.invoiceLineDao.updateLineValues(
+        lineId,
+        InvoiceLinesCompanion(
+          grossWeight: Value(grossWeight),
+          waterWeight: Value(waterWeight),
+          density: Value(values.density),
+          carat: Value(values.carat),
+          unitPrice: Value(values.unitPrice),
+          amount: Value(values.amount),
+        ),
+      );
+      await _refreshTotals(invoiceId);
+      final rows = await _db.invoiceLineDao.getForInvoice(invoiceId);
+      return rows.firstWhere((l) => l.id == lineId).toEntity();
+    });
+  }
+
+  @override
   Future<void> deleteLine({required int lineId, required int invoiceId}) {
     return _db.transaction(() async {
       await _db.invoiceLineDao.deleteById(lineId);

@@ -86,7 +86,8 @@ class InvoiceHistoryScreen extends StatelessWidget {
   }
 }
 
-/// Tablet detail pane: reprint button row + read-only [InvoiceDetailPanel].
+/// Tablet detail pane: reprint button row + editable [InvoiceDetailPanel]
+/// (edit Poids/Eaux values in place — no add/delete).
 class _DetailPane extends StatelessWidget {
   const _DetailPane({required this.vm});
 

@@ -8,7 +8,7 @@ Flutter app for managing gold bar sale invoices. Single operator, single-user, *
 
 Targets Android **and web/PWA** (the client installs the PWA on an iPhone via Safari → Share → Add to Home Screen). The backup pipeline is platform-agnostic (no `dart:io` — see Web/PWA section).
 
-**Current state:** Google Drive backup fully implemented and tested on physical device. `schemaVersion = 2`. The single-screen entry + history-drawer UX is **implemented** (commit "single-screen entry UX") — `AppShell` + `InvoiceEntryScreen` + `InvoiceHistoryScreen` + `InvoiceDetailScreen` (read-only). The legacy 3-screen flow (List → Form → Detail) and its viewmodels are gone.
+**Current state:** Google Drive backup fully implemented and tested on physical device. `schemaVersion = 2`. The single-screen entry + history-drawer UX is **implemented** (commit "single-screen entry UX") — `AppShell` + `InvoiceEntryScreen` + `InvoiceHistoryScreen` + `InvoiceDetailScreen`. The detail screen is **editable — values only** (edit Poids/Eaux of existing lines inline with auto-save; never adds or deletes lines). The legacy 3-screen flow (List → Form → Detail) and its viewmodels are gone.
 
 ## Commands
 
@@ -89,13 +89,13 @@ Layering rules (non-negotiable):
 ```
 / → AppShell  (AppBar: BackupStatusDot + Drawer button; body: InvoiceEntryScreen)
   ├── [Drawer] → /history     (InvoiceHistoryScreen — read-only list of saved invoices)
-  │                └── tile tap → /history/:id (InvoiceDetailScreen — read-only + Reprint)
+  │                └── tile tap → /history/:id (InvoiceDetailScreen — edit Poids/Eaux inline + Reprint)
   └── [Drawer] → /backup      (BackupScreen)
 ```
 
 - `InvoiceEntryScreen` is the home screen: base-price input, gross+water entry, live preview, line table, Save & Print — all driven by the global `InvoiceEntryViewModel`. Base price persists across "Ajouter barre"; only gross/water clear (then focus returns to gross). After "Enregistrer & Imprimer" everything clears for the next invoice.
 - `BackupReminderBanner` sits above the entry form; `BackupStatusDot` (colored circle) lives in the AppBar.
-- `InvoiceDetailScreen` is read-only (saved invoices only) with a Reprint action — it no longer handles draft editing.
+- `InvoiceDetailScreen` edits a saved invoice's existing lines **in place** (Poids/Eaux only, auto-saved when focus leaves the row, recomputed faithfully via `updateLine`) with a Reprint action. It never adds/deletes lines (bar count fixed) and never edits drafts; `basePrice`/`invoiceNumber` stay locked.
 
 ## Business Domain — Calculation Formulas (CRITICAL)
 
@@ -241,6 +241,7 @@ Web-specific behavior (see the google_sign_in gotchas below): platform-split `in
 - ViewModels subscribe to Drift streams in their constructor (`_repo.watchX().listen(...)`) and cancel in `dispose()` — never use `StreamBuilder` in views, drive UI from ViewModel state
 - `google_sign_in` v7 API: `GoogleSignIn.instance.initialize()` called once in `main.dart` (before `runApp`); authorization via `authorizationClient.authorizationHeaders(_scopes, promptIfNecessary: bool)` — no `GoogleSignIn(scopes: [...])` constructor style. **Platform-split init** (both `main.dart` and `GoogleDriveService._ensureInitialized` must match): web passes `clientId: AppConfig.googleWebClientId`, Android passes `serverClientId: AppConfig.googleServerClientId` — guarded by `kIsWeb`. Passing `serverClientId` on web is unsupported; omitting `serverClientId` on Android throws "serverClientId must be provided on Android".
 - **Web has no interactive `authenticate()`** — `_resolveHeaders` branches on `kIsWeb`: web calls `authorizationClient.authorizeScopes(_scopes)` (must be triggered by a user gesture / button tap) then re-reads headers silently; Android keeps the `authenticate(scopeHint:) → authorizationHeaders(promptIfNecessary: true)` flow.
+- **Android `[16] Account reauth failed` self-heal** — `GoogleDriveService._authenticateAndroid()` wraps `authenticate()`: a `canceled` `GoogleSignInException` (the `[16] Account reauth failed` thrown by Credential Manager when the lightweight-restored session points at a device account whose token can't refresh) triggers one `signOut()` + retry with a clean slate. Config is fine (SHA-1 debug `6B:8A:62…` + release `56:C5:0C…` both registered); this is a device-account state issue. If the retry also fails, the operator must remove + re-add the Google account in system settings.
 - `InvoiceRepositoryImpl` receives both `AppDatabase` and `GoldBarCalculatorService` — it calls the calculator internally so DAOs stay pure data-access
 - Comma input (`replaceAll(',', '.')`) needed before `double.tryParse()` for FR locale keyboards
 
@@ -254,11 +255,11 @@ The legacy 3-screen flow (List → Form → Detail) was replaced by:
 - **`AppShell`** (`app/app_shell.dart`) — root `Scaffold` wrapping `InvoiceEntryScreen`, with `AppDrawer` (Drawer nav) and `BackupStatusDot` in the AppBar
 - **`InvoiceEntryScreen`** — single home screen: base price input, poids+eaux entry card, real-time preview, line table, Save & Print
 - **`InvoiceHistoryScreen`** — from Drawer; read-only list of saved invoices
-- **`InvoiceDetailScreen`** — read-only detail + Reprint; never edits drafts
+- **`InvoiceDetailScreen`** — edits a saved invoice's lines in place (Poids/Eaux only, inline `EditableInvoiceTable` with row-blur auto-save) + Reprint; never adds/deletes lines, never edits drafts
 
 ViewModels (both global in `di.dart`):
 - `InvoiceEntryViewModel` — `basePrice`, `grossWeight`, `waterWeight`, live preview (`currentPreview`), draft lifecycle (`addLine()` lazily creates the draft, `saveAndPrint()`, `_loadExistingDraft()`, `_resetForNewInvoice()`), `canAddLine`, `canSaveAndPrint`, `isSavingAndPrinting`, `shouldShowBackupReminder`/`backupReminderMessage`/`refreshBackupStatus()`
-- `InvoiceHistoryViewModel` — watches saved invoices, loads selected invoice + lines for detail, `reprintInvoice()`
+- `InvoiceHistoryViewModel` — watches saved invoices, loads selected invoice + lines for detail, `reprintInvoice()`, `updateLineInSelectedInvoice(lineId, gross, water)` (inline edit → `_repo.updateLine` → reload), `isMutating`/`editError`, `globalCaratResult`
 
 Key UX behaviors of `InvoiceEntryScreen`:
 - Base price persists across "Ajouter barre" — only gross/water fields clear, then focus returns to gross

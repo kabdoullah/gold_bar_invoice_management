@@ -2,18 +2,24 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../../core/errors/business_exceptions.dart';
 import '../../../domain/entities/invoice.dart';
 import '../../../domain/entities/invoice_line.dart';
 import '../../../domain/repositories/i_invoice_repository.dart';
 import '../../../domain/services/gold_bar_calculator_service.dart';
 import '../../../domain/services/print_service.dart';
 
-/// State for [InvoiceHistoryScreen] and the read-only
-/// [InvoiceDetailScreen].
+/// State for [InvoiceHistoryScreen] and the editable [InvoiceDetailScreen].
 ///
 /// Watches the saved-invoices stream for the list, and lazily loads the
-/// selected invoice + its lines when the detail route is opened. Reprint
-/// regenerates the PDF straight from the stored values — never recomputes.
+/// selected invoice + its lines when the detail route is opened. The detail
+/// view edits the Poids/Eaux values of existing lines (no add, no delete):
+/// each edit goes through the repository's atomic [updateLine] (which
+/// re-prices the line and refreshes the denormalized totals), then reloads
+/// the selection from storage so the totals row and global carat reflect the
+/// new state. basePrice, invoiceNumber and the bar count never change on
+/// edit. Reprint regenerates the PDF straight from the stored values — never
+/// recomputes — and is manual (no auto-reprint after an edit).
 class InvoiceHistoryViewModel extends ChangeNotifier {
   InvoiceHistoryViewModel(this._repo, this._printService, this._calculator) {
     _invoicesSub = _repo.watchSavedInvoices().listen((invoices) {
@@ -103,6 +109,52 @@ class InvoiceHistoryViewModel extends ChangeNotifier {
       return false;
     } finally {
       _isReprinting = false;
+      notifyListeners();
+    }
+  }
+
+  // ── Editing a saved invoice (line values only) ────────────────────
+
+  bool    _isMutating = false;
+  String? _editError;
+
+  /// True while a line edit is being persisted + reloaded.
+  bool get isMutating => _isMutating;
+
+  /// Last edit failure message, or null on success.
+  String? get editError => _editError;
+
+  /// Re-prices an existing line of the currently selected saved invoice from
+  /// new [grossWeight]/[waterWeight] (inline editing). The repository
+  /// recomputes the derived values and refreshes the invoice totals
+  /// atomically; we then reload the selection. basePrice, invoiceNumber and
+  /// the bar count stay unchanged. Returns true on success; on an invalid
+  /// pair (e.g. water >= gross) stores the message in [editError] and
+  /// returns false (the table then reverts the field).
+  Future<bool> updateLineInSelectedInvoice(
+    int lineId,
+    double grossWeight,
+    double waterWeight,
+  ) async {
+    final inv = _selectedInvoice;
+    if (inv == null || _isMutating) return false;
+    _isMutating = true;
+    _editError  = null;
+    notifyListeners();
+    try {
+      await _repo.updateLine(
+        lineId:      lineId,
+        invoiceId:   inv.id,
+        grossWeight: grossWeight,
+        waterWeight: waterWeight,
+      );
+      await selectInvoice(inv.id);
+      return true;
+    } on BusinessException catch (e) {
+      _editError = e.message;
+      return false;
+    } finally {
+      _isMutating = false;
       notifyListeners();
     }
   }

@@ -57,6 +57,17 @@ abstract interface class IInvoiceRepository {
     required double waterWeight,
   });
 
+  /// Re-prices an existing line from new [grossWeight]/[waterWeight] (inline
+  /// editing of a saved invoice), then refreshes the invoice totals —
+  /// atomically. Recomputes density/carat/unitPrice/amount with the invoice's
+  /// locked basePrice; `barNumber`, `basePrice` and `status` are unchanged.
+  Future<InvoiceLine> updateLine({
+    required int lineId,
+    required int invoiceId,
+    required double grossWeight,
+    required double waterWeight,
+  });
+
   /// Deletes a line and refreshes the invoice totals — atomically.
   Future<void> deleteLine({required int lineId, required int invoiceId});
 

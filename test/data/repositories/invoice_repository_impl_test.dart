@@ -116,6 +116,49 @@ void main() {
     });
   });
 
+  group('updateLine', () {
+    test('re-prices a line, refreshes totals, keeps count/basePrice/status',
+        () async {
+      final id = await createDraft();
+      final line = await repo.addLine(
+          invoiceId: id, grossWeight: 430.87, waterWeight: 23.67);
+      await repo.finalizeInvoice(id);
+
+      // Re-price to the reference line 2 (carat 22.64, amount 9 130 689.11).
+      final updated = await repo.updateLine(
+        lineId: line.id,
+        invoiceId: id,
+        grossWeight: 126.39,
+        waterWeight: 6.87,
+      );
+
+      expect(updated.barNumber, 1); // never renumbered
+      expect(updated.basePrice, 70200);
+      expect(updated.carat, closeTo(22.64, 0.01));
+      expect(updated.amount, closeTo(9130689.11, 0.01));
+
+      final invoice = await repo.getInvoice(id);
+      expect(invoice!.status, InvoiceStatus.saved);
+      expect(invoice.barCount, 1); // count unchanged
+      expect(invoice.totalGrossWeight, closeTo(126.39, 0.001));
+      expect(invoice.totalWaterWeight, closeTo(6.87, 0.001));
+      expect(invoice.totalAmount, closeTo(9130689.11, 0.01));
+    });
+
+    test('rejects an invalid weight pair (water >= gross)', () async {
+      final id = await createDraft();
+      final line = await repo.addLine(
+          invoiceId: id, grossWeight: 430.87, waterWeight: 23.67);
+      await repo.finalizeInvoice(id);
+
+      expect(
+        repo.updateLine(
+            lineId: line.id, invoiceId: id, grossWeight: 10, waterWeight: 20),
+        throwsA(isA<InvalidWeightException>()),
+      );
+    });
+  });
+
   group('updateDraftHeader', () {
     test('rejects basePrice change once lines exist', () async {
       final id = await createDraft();

@@ -3,11 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../../../core/utils/number_formatter.dart';
 import '../../../core/utils/responsive.dart';
-import '../../../domain/entities/invoice_line_preview.dart';
 import '../viewmodels/invoice_entry_viewmodel.dart';
 import '../widgets/backup_reminder_banner.dart';
+import '../widgets/bar_entry_card.dart';
 import '../widgets/invoice_table.dart';
 import '../widgets/save_and_print_button.dart';
 import '../widgets/totals_widget.dart';
@@ -172,11 +171,14 @@ class _InvoiceEntryScreenState extends State<InvoiceEntryScreen> {
     );
   }
 
-  Widget _entryCard(InvoiceEntryViewModel vm) => _EntryCard(
-        vm: vm,
+  Widget _entryCard(InvoiceEntryViewModel vm) => BarEntryCard(
         grossCtrl: _grossCtrl,
         waterCtrl: _waterCtrl,
         grossFocus: _grossFocus,
+        onGrossChanged: (v) => vm.setGrossWeight(_parse(v)),
+        onWaterChanged: (v) => vm.setWaterWeight(_parse(v)),
+        preview: vm.currentPreview,
+        canAdd: vm.canAddLine,
         onAdd: () => _onAdd(vm),
       );
 
@@ -206,224 +208,8 @@ class _BasePriceField extends StatelessWidget {
       controller: controller,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       style: TextStyle(color: colors.textPrimary, fontSize: 16),
-      decoration: _inputDecoration(colors, 'Prix de base'),
+      decoration: goldInputDecoration(colors, 'Prix de base'),
       onChanged: (v) => vm.setBasePrice(_InvoiceEntryScreenState._parse(v)),
     );
   }
-}
-
-// ── Entry card ───────────────────────────────────────────────────────
-
-class _EntryCard extends StatelessWidget {
-  const _EntryCard({
-    required this.vm,
-    required this.grossCtrl,
-    required this.waterCtrl,
-    required this.grossFocus,
-    required this.onAdd,
-  });
-
-  final InvoiceEntryViewModel vm;
-  final TextEditingController grossCtrl;
-  final TextEditingController waterCtrl;
-  final FocusNode             grossFocus;
-  final VoidCallback          onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final fields = Row(
-      children: [
-        Expanded(
-          child: _WeightField(
-            label: 'Poids (g)',
-            controller: grossCtrl,
-            focusNode: grossFocus,
-            onChanged: (v) =>
-                vm.setGrossWeight(_InvoiceEntryScreenState._parse(v)),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _WeightField(
-            label: 'Eaux (g)',
-            controller: waterCtrl,
-            onChanged: (v) =>
-                vm.setWaterWeight(_InvoiceEntryScreenState._parse(v)),
-          ),
-        ),
-      ],
-    );
-
-    final preview = vm.currentPreview != null
-        ? _PreviewBlock(preview: vm.currentPreview!)
-        : const _PreviewPlaceholder();
-
-    final addButton = _AddBarButton(enabled: vm.canAddLine, onPressed: onAdd);
-
-    final Widget body = Column(
-      children: [
-        fields,
-        Divider(color: colors.border, height: 20),
-        preview,
-        const SizedBox(height: 12),
-        addButton,
-      ],
-    );
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.border, width: 0.5),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: body,
-    );
-  }
-}
-
-class _WeightField extends StatelessWidget {
-  const _WeightField({
-    required this.label,
-    required this.controller,
-    required this.onChanged,
-    this.focusNode,
-  });
-
-  final String                label;
-  final TextEditingController controller;
-  final ValueChanged<String>  onChanged;
-  final FocusNode?            focusNode;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return TextField(
-      controller: controller,
-      focusNode: focusNode,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      style: TextStyle(color: colors.textPrimary, fontSize: 15),
-      decoration: _inputDecoration(colors, label),
-      onChanged: onChanged,
-    );
-  }
-}
-
-// ── Preview ──────────────────────────────────────────────────────────
-
-class _PreviewBlock extends StatelessWidget {
-  const _PreviewBlock({required this.preview});
-
-  final InvoiceLinePreview preview;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _PreviewRow('Densité', NumberFormatter.density(preview.density)),
-        _PreviewRow('Carat', NumberFormatter.carat(preview.carat),
-            isRed: true),
-        _PreviewRow('U/BASE', NumberFormatter.unitPrice(preview.unitPrice)),
-        _PreviewRow('Montant', NumberFormatter.amount(preview.amount)),
-      ],
-    );
-  }
-}
-
-class _PreviewPlaceholder extends StatelessWidget {
-  const _PreviewPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      children: [
-        _PreviewRow('Densité', '—'),
-        _PreviewRow('Carat', '—', isRed: true),
-        _PreviewRow('U/BASE', '—'),
-        _PreviewRow('Montant', '—'),
-      ],
-    );
-  }
-}
-
-class _PreviewRow extends StatelessWidget {
-  const _PreviewRow(this.label, this.value, {this.isRed = false});
-
-  final String label;
-  final String value;
-  final bool   isRed;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style: TextStyle(color: colors.textSecondary, fontSize: 13)),
-          Text(
-            value,
-            style: TextStyle(
-              color: isRed ? colors.accentCarat : colors.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Add bar ──────────────────────────────────────────────────────────
-
-class _AddBarButton extends StatelessWidget {
-  const _AddBarButton({required this.enabled, required this.onPressed});
-
-  final bool         enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        icon: const Icon(Icons.add),
-        label: const Text('Ajouter barre'),
-        onPressed: enabled ? onPressed : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: colors.accentAction,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: colors.border,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Shared input decoration ──────────────────────────────────────────
-
-InputDecoration _inputDecoration(AppColorScheme colors, String label) {
-  final border = OutlineInputBorder(
-    borderRadius: BorderRadius.circular(8),
-    borderSide: BorderSide(color: colors.border, width: 0.5),
-  );
-  return InputDecoration(
-    labelText: label,
-    labelStyle: TextStyle(color: colors.textSecondary),
-    filled: true,
-    fillColor: colors.surface,
-    isDense: true,
-    border: border,
-    enabledBorder: border,
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide(color: colors.accentAction, width: 1),
-    ),
-  );
 }

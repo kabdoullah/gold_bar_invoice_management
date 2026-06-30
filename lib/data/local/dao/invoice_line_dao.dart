@@ -50,6 +50,13 @@ class InvoiceLineDao extends DatabaseAccessor<AppDatabase>
     await (delete(invoiceLines)..where((l) => l.id.equals(id))).go();
   }
 
+  /// Overwrites the editable/derived columns of one line (used by inline
+  /// editing on a saved invoice). `barNumber`, `invoiceId` and `basePrice`
+  /// are not touched by the caller's companion.
+  Future<void> updateLineValues(int id, InvoiceLinesCompanion entry) async {
+    await (update(invoiceLines)..where((l) => l.id.equals(id))).write(entry);
+  }
+
   /// Next bar number for an invoice: max(barNumber) + 1, starting at 1.
   Future<int> nextBarNumber(int invoiceId) async {
     final maxBar = invoiceLines.barNumber.max();

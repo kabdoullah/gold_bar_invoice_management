@@ -21,7 +21,11 @@ class ThemeToggleButton extends StatelessWidget {
         isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
       ),
       tooltip: isDark ? 'Mode clair' : 'Mode sombre',
-      onPressed: themeVm.toggleTheme,
+      // Set the opposite of what's currently visible — works even from
+      // ThemeMode.system (toggling the raw mode would waste the first tap).
+      onPressed: () => themeVm.setThemeMode(
+        isDark ? ThemeMode.light : ThemeMode.dark,
+      ),
     );
   }
 }

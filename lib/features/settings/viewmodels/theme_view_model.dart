@@ -31,15 +31,6 @@ class ThemeViewModel extends ChangeNotifier {
     _safeNotify();
   }
 
-  /// Toggles between light and dark.
-  /// If current mode is system, switches to dark first.
-  Future<void> toggleTheme() async {
-    _themeMode =
-        _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
-    await _persist();
-    _safeNotify();
-  }
-
   /// Sets an explicit mode.
   Future<void> setThemeMode(ThemeMode mode) async {
     if (mode == _themeMode) return;

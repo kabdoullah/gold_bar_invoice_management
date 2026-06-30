@@ -119,8 +119,7 @@ class GoogleDriveService {
         headers = await GoogleSignIn.instance.authorizationClient
             .authorizationHeaders(_scopes, promptIfNecessary: false);
       } else {
-        final account =
-            await GoogleSignIn.instance.authenticate(scopeHint: _scopes);
+        final account = await _authenticateAndroid();
         headers = await account.authorizationClient
             .authorizationHeaders(_scopes, promptIfNecessary: true);
       }
@@ -130,6 +129,34 @@ class GoogleDriveService {
       throw StateError('Could not obtain Drive authorization headers');
     }
     return headers;
+  }
+
+  /// Interactive Android sign-in, self-healing against a stale device
+  /// credential.
+  ///
+  /// `[16] Account reauth failed` (a `canceled` GoogleSignInException) is
+  /// thrown by Android's Credential Manager when the silently-restored
+  /// session (via [attemptLightweightAuthentication]) points at a device
+  /// account whose token can no longer be refreshed. Clearing that session
+  /// with [signOut] and authenticating once more presents a fresh account
+  /// picker and recovers without forcing the operator to re-add the account
+  /// in system settings.
+  ///
+  /// Only one retry: if the second attempt also fails, the exception
+  /// propagates so the UI shows the real error instead of looping.
+  Future<GoogleSignInAccount> _authenticateAndroid() async {
+    try {
+      return await GoogleSignIn.instance.authenticate(scopeHint: _scopes);
+    } on GoogleSignInException catch (e) {
+      if (e.code != GoogleSignInExceptionCode.canceled) rethrow;
+      // Drop the stale session, then retry once with a clean slate.
+      try {
+        await GoogleSignIn.instance.signOut();
+      } catch (_) {
+        // Sign-out best effort — proceed to retry regardless.
+      }
+      return GoogleSignIn.instance.authenticate(scopeHint: _scopes);
+    }
   }
 
   /// Finds a Drive folder by name under [parentId], or creates it if absent.

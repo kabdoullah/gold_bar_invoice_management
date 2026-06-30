@@ -210,6 +210,7 @@ class _BasePriceField extends StatelessWidget {
       style: TextStyle(color: colors.textPrimary, fontSize: 16),
       decoration: goldInputDecoration(colors, 'Prix de base'),
       onChanged: (v) => vm.setBasePrice(_InvoiceEntryScreenState._parse(v)),
+      onTapOutside: (event) => FocusScope.of(context).unfocus(),
     );
   }
 }

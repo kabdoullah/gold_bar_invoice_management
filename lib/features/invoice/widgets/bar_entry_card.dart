@@ -105,6 +105,7 @@ class _WeightField extends StatelessWidget {
       style: TextStyle(color: colors.textPrimary, fontSize: 15),
       decoration: goldInputDecoration(colors, label),
       onChanged: onChanged,
+      onTapOutside: (event) => focusNode?.unfocus(),
     );
   }
 }

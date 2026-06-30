@@ -168,6 +168,7 @@ class _EditableBasePriceState extends State<_EditableBasePrice> {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       textInputAction: TextInputAction.done,
       onSubmitted: (_) => _focus.unfocus(),
+      onTapOutside: (event) => _focus.unfocus(),
       style: TextStyle(
           color: colors.textPrimary, fontSize: 16, fontWeight: FontWeight.w500),
       decoration: InputDecoration(

@@ -247,6 +247,7 @@ class _EditableInvoiceTableState extends State<EditableInvoiceTable> {
         textAlign: TextAlign.right,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         textInputAction: TextInputAction.done,
+        onTapOutside: (event) => focusNode.unfocus(),
         onSubmitted: (_) => focusNode.unfocus(),
         style: TextStyle(color: colors.textPrimary, fontSize: 13),
         decoration: InputDecoration(

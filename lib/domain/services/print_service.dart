@@ -15,14 +15,14 @@ class PdfFontSizes {
   PdfFontSizes._();
 
   static const double header = 22.0; // location + date line
-  static const double invoiceNumber = 20.0; // "FACTURE FAC-0001"
-  static const double barCount = 16.0; // "Nombre Barres: 5"
-  static const double tableHeader = 15.0; // column headers
-  static const double tableCell = 16.0; // data cells
-  static const double caratCell = 16.0; // carat column — key value
-  static const double totalsLabel = 15.0; // totals labels
-  static const double totalsValue = 17.0; // total numbers
-  static const double grandTotal = 22.0; // "Montant Total" — biggest
+  static const double invoiceNumber = 22.0; // "FACTURE FAC-0001"
+  static const double barCount = 18.0; // "Nombre Barres: 5"
+  static const double tableHeader = 16.0; // column headers
+  static const double tableCell = 18.0; // data cells
+  static const double caratCell = 20.0; // carat column — key value (hero)
+  static const double totalsLabel = 16.0; // totals labels
+  static const double totalsValue = 18.0; // total numbers
+  static const double grandTotal = 24.0; // "Montant Total" — biggest
 }
 
 /// Generates a PDF faithful to the original desktop software layout and
@@ -35,12 +35,20 @@ class PrintService {
   static final _headerStyle = pw.TextStyle(
     fontSize: PdfFontSizes.tableHeader,
     fontWeight: pw.FontWeight.bold,
+    color: PdfColors.white,
   );
-  static const _cellStyle = pw.TextStyle(fontSize: PdfFontSizes.tableCell);
+  // All data cells are bold — printed numbers read better heavy at arm's
+  // length.
+  static final _cellStyle = pw.TextStyle(
+    fontSize: PdfFontSizes.tableCell,
+    fontWeight: pw.FontWeight.bold,
+  );
+  // Carat is the hero value: dark red on a pale red chip so it stays legible
+  // even when the red hue itself is hard to perceive.
   static final _caratStyle = pw.TextStyle(
     fontSize: PdfFontSizes.caratCell,
     fontWeight: pw.FontWeight.bold,
-    color: PdfColors.red,
+    color: PdfColors.red900,
   );
   static final _totalStyle = pw.TextStyle(
     fontSize: PdfFontSizes.totalsValue,
@@ -121,7 +129,8 @@ class PrintService {
 
   pw.Widget _buildTable(Invoice invoice, List<InvoiceLine> lines) {
     return pw.Table(
-      border: pw.TableBorder.all(color: PdfColors.grey700, width: 0.5),
+      border: pw.TableBorder.all(color: PdfColors.grey600, width: 1),
+      defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
       columnWidths: const {
         0: pw.FlexColumnWidth(2),
         1: pw.FlexColumnWidth(2),
@@ -133,7 +142,7 @@ class PrintService {
       },
       children: [
         pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+          decoration: const pw.BoxDecoration(color: PdfColors.grey700),
           children: [
             for (final label in [
               'Base',
@@ -147,16 +156,22 @@ class PrintService {
               _cell(label, style: _headerStyle),
           ],
         ),
-        for (final line in lines)
-          pw.TableRow(children: [
-            _cell(NumberFormatter.amount(line.basePrice)),
-            _cell(NumberFormatter.weight(line.grossWeight)),
-            _cell(NumberFormatter.weight(line.waterWeight)),
-            _cell(NumberFormatter.density(line.density)),
-            _cell(NumberFormatter.carat(line.carat), style: _caratStyle),
-            _cell(NumberFormatter.unitPrice(line.unitPrice)),
-            _cell(NumberFormatter.amount(line.amount)),
-          ]),
+        for (final entry in lines.asMap().entries)
+          pw.TableRow(
+            // Zebra striping so a wide landscape row stays easy to follow.
+            decoration: entry.key.isOdd
+                ? const pw.BoxDecoration(color: PdfColors.grey100)
+                : null,
+            children: [
+              _cell(NumberFormatter.amount(entry.value.basePrice)),
+              _cell(NumberFormatter.weight(entry.value.grossWeight)),
+              _cell(NumberFormatter.weight(entry.value.waterWeight)),
+              _cell(NumberFormatter.density(entry.value.density)),
+              _caratCell(NumberFormatter.carat(entry.value.carat)),
+              _cell(NumberFormatter.unitPrice(entry.value.unitPrice)),
+              _cell(NumberFormatter.amount(entry.value.amount)),
+            ],
+          ),
       ],
     );
   }
@@ -196,12 +211,21 @@ class PrintService {
           ],
         ),
         pw.SizedBox(height: 10),
-        // Grand total on its own full-width line — biggest, never wraps.
-        pw.Text(
-          'Montant Total: ${NumberFormatter.amount(invoice.totalAmount)}',
-          style: pw.TextStyle(
-            fontSize: PdfFontSizes.grandTotal,
-            fontWeight: pw.FontWeight.bold,
+        // Grand total on its own full-width boxed line — biggest, framed so it
+        // is impossible to miss; never wraps.
+        pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.grey200,
+            border: pw.Border.all(color: PdfColors.grey800, width: 1.5),
+          ),
+          child: pw.Text(
+            'Montant Total: ${NumberFormatter.amount(invoice.totalAmount)}',
+            style: pw.TextStyle(
+              fontSize: PdfFontSizes.grandTotal,
+              fontWeight: pw.FontWeight.bold,
+            ),
           ),
         ),
       ],
@@ -217,12 +241,23 @@ class PrintService {
 
   pw.Widget _cell(String text, {pw.TextStyle? style}) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 13),
       child: pw.Text(
         text,
         style: style ?? _cellStyle,
         textAlign: pw.TextAlign.right,
       ),
+    );
+  }
+
+  /// Carat data cell rendered as a pale red chip filling the cell — the hero
+  /// value, legible even when the red text hue is hard to perceive.
+  pw.Widget _caratCell(String text) {
+    return pw.Container(
+      color: PdfColors.red50,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 13),
+      alignment: pw.Alignment.centerRight,
+      child: pw.Text(text, style: _caratStyle, textAlign: pw.TextAlign.right),
     );
   }
 }

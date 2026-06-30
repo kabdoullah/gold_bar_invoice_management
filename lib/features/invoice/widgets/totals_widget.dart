@@ -46,7 +46,7 @@ class TotalsWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: colors.border, width: 0.5),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -59,14 +59,18 @@ class TotalsWidget extends StatelessWidget {
             children: [
               Text(
                 'Montant Total',
-                style: TextStyle(color: colors.textSecondary, fontSize: 13),
+                style: TextStyle(
+                  color: colors.totalText,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
               ),
               Text(
                 NumberFormatter.amount(invoice.totalAmount),
                 style: TextStyle(
                   color: colors.totalText,
                   fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontSize: 24,
                 ),
               ),
             ],
@@ -93,7 +97,7 @@ class _Stat extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(color: colors.textSecondary, fontSize: 11),
+          style: TextStyle(color: colors.textSecondary, fontSize: 13),
         ),
         const SizedBox(height: 2),
         Text(
@@ -101,7 +105,7 @@ class _Stat extends StatelessWidget {
           style: TextStyle(
             color: isRed ? colors.accentCarat : colors.totalText,
             fontWeight: FontWeight.bold,
-            fontSize: 14,
+            fontSize: 18,
           ),
         ),
       ],

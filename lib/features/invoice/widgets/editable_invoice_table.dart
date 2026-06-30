@@ -162,7 +162,7 @@ class _EditableInvoiceTableState extends State<EditableInvoiceTable> {
   }
 
   Widget _buildTable(AppColorScheme colors, {required bool flexible}) {
-    const fixedWidths = [100.0, 110.0, 100.0, 80.0, 80.0, 110.0, 140.0];
+    const fixedWidths = [110.0, 120.0, 110.0, 90.0, 90.0, 125.0, 155.0];
     return Table(
       border: TableBorder.all(color: colors.border, width: 1),
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
@@ -204,14 +204,14 @@ class _EditableInvoiceTableState extends State<EditableInvoiceTable> {
 
   Widget _headerCell(AppColorScheme colors, String label) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       child: Text(
         label,
         textAlign: TextAlign.right,
         style: TextStyle(
           color: colors.textPrimary,
           fontWeight: FontWeight.bold,
-          fontSize: 13,
+          fontSize: 15,
         ),
       ),
     );
@@ -220,14 +220,14 @@ class _EditableInvoiceTableState extends State<EditableInvoiceTable> {
   Widget _cell(AppColorScheme colors, String text,
       {Color? color, bool bold = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       child: Text(
         text,
         textAlign: TextAlign.right,
         style: TextStyle(
           color: color ?? colors.textPrimary,
           fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-          fontSize: 13,
+          fontSize: 16,
         ),
       ),
     );
@@ -249,7 +249,7 @@ class _EditableInvoiceTableState extends State<EditableInvoiceTable> {
         textInputAction: TextInputAction.done,
         onTapOutside: (event) => focusNode.unfocus(),
         onSubmitted: (_) => focusNode.unfocus(),
-        style: TextStyle(color: colors.textPrimary, fontSize: 13),
+        style: TextStyle(color: colors.textPrimary, fontSize: 16),
         decoration: InputDecoration(
           isDense: true,
           contentPadding:

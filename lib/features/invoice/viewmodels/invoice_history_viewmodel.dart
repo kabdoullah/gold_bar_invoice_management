@@ -159,6 +159,33 @@ class InvoiceHistoryViewModel extends ChangeNotifier {
     }
   }
 
+  /// Changes the base price of the currently selected saved invoice and
+  /// re-prices all its lines (repository does it atomically), then reloads.
+  /// Returns true on success; on an invalid price stores the message in
+  /// [editError] and returns false (the field then reverts).
+  Future<bool> updateBasePriceOfSelectedInvoice(double basePrice) async {
+    final inv = _selectedInvoice;
+    if (inv == null || _isMutating) return false;
+    if (basePrice == inv.basePrice) return true; // unchanged, no-op
+    _isMutating = true;
+    _editError  = null;
+    notifyListeners();
+    try {
+      await _repo.updateInvoiceBasePrice(
+        invoiceId: inv.id,
+        basePrice: basePrice,
+      );
+      await selectInvoice(inv.id);
+      return true;
+    } on BusinessException catch (e) {
+      _editError = e.message;
+      return false;
+    } finally {
+      _isMutating = false;
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     _invoicesSub.cancel();

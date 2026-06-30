@@ -68,6 +68,18 @@ abstract interface class IInvoiceRepository {
     required double waterWeight,
   });
 
+  /// Changes the [basePrice] of a saved invoice and **re-prices every line**
+  /// with it (unitPrice + amount recomputed; density/carat are
+  /// base-independent and stay), then refreshes the invoice totals — all in
+  /// one transaction. `status` and bar count are unchanged.
+  ///
+  /// Throws `InvalidBasePriceException` if [basePrice] is not strictly
+  /// positive.
+  Future<void> updateInvoiceBasePrice({
+    required int invoiceId,
+    required double basePrice,
+  });
+
   /// Deletes a line and refreshes the invoice totals — atomically.
   Future<void> deleteLine({required int lineId, required int invoiceId});
 

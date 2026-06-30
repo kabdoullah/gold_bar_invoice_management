@@ -95,7 +95,7 @@ Layering rules (non-negotiable):
 
 - `InvoiceEntryScreen` is the home screen: base-price input, gross+water entry, live preview, line table, Save & Print — all driven by the global `InvoiceEntryViewModel`. Base price persists across "Ajouter barre"; only gross/water clear (then focus returns to gross). After "Enregistrer & Imprimer" everything clears for the next invoice.
 - `BackupReminderBanner` sits above the entry form; `BackupStatusDot` (colored circle) lives in the AppBar.
-- `InvoiceDetailScreen` edits a saved invoice's existing lines **in place** (Poids/Eaux only, auto-saved when focus leaves the row, recomputed faithfully via `updateLine`) with a Reprint action. It never adds/deletes lines (bar count fixed) and never edits drafts; `basePrice`/`invoiceNumber` stay locked.
+- `InvoiceDetailScreen` edits a saved invoice **in place** (auto-saved when focus leaves the field/row, recomputed faithfully) with a Reprint action: per-line Poids/Eaux via `updateLine`, and the **base price** via `updateInvoiceBasePrice` which re-prices every line (unitPrice + amount; density/carat are base-independent). It never adds/deletes lines (bar count fixed) and never edits drafts; `invoiceNumber` stays locked.
 
 ## Business Domain — Calculation Formulas (CRITICAL)
 
@@ -236,7 +236,7 @@ Web-specific behavior (see the google_sign_in gotchas below): platform-split `in
 
 - Drift row classes renamed via `@DataClassName` (`InvoiceRow`, `InvoiceLineRow`) to avoid clashing with domain entities; mapping in `data/repositories/invoice_mappers.dart`
 - `invoice_lines.invoiceId` has `onDelete: KeyAction.cascade` + `PRAGMA foreign_keys = ON` in `beforeOpen` — discarding a draft deletes its lines automatically
-- `basePrice` is locked once an invoice has lines (`updateDraftHeader` throws) — stored line amounts would diverge from the header
+- `basePrice` on a **draft** is locked once it has lines (`updateDraftHeader` throws) — stored line amounts would diverge from the header. On a **saved** invoice it can be changed via `updateInvoiceBasePrice`, which re-prices every line in the same transaction so nothing diverges (the detail screen's editable base-price field)
 - `AppDatabase.forTesting(NativeDatabase.memory())` constructor used in all Drift tests — no file I/O needed
 - ViewModels subscribe to Drift streams in their constructor (`_repo.watchX().listen(...)`) and cancel in `dispose()` — never use `StreamBuilder` in views, drive UI from ViewModel state
 - `google_sign_in` v7 API: `GoogleSignIn.instance.initialize()` called once in `main.dart` (before `runApp`); authorization via `authorizationClient.authorizationHeaders(_scopes, promptIfNecessary: bool)` — no `GoogleSignIn(scopes: [...])` constructor style. **Platform-split init** (both `main.dart` and `GoogleDriveService._ensureInitialized` must match): web passes `clientId: AppConfig.googleWebClientId`, Android passes `serverClientId: AppConfig.googleServerClientId` — guarded by `kIsWeb`. Passing `serverClientId` on web is unsupported; omitting `serverClientId` on Android throws "serverClientId must be provided on Android".

@@ -168,6 +168,47 @@ class InvoiceRepositoryImpl implements IInvoiceRepository {
   }
 
   @override
+  Future<void> updateInvoiceBasePrice({
+    required int invoiceId,
+    required double basePrice,
+  }) async {
+    if (basePrice <= 0) {
+      throw const InvalidBasePriceException('basePrice must be > 0');
+    }
+    await _requireInvoice(invoiceId);
+    await _db.transaction(() async {
+      final lines = await _db.invoiceLineDao.getForInvoice(invoiceId);
+      for (final line in lines) {
+        // density/carat depend only on the weights — recomputing with the new
+        // basePrice yields the same density/carat and a new unitPrice/amount.
+        final values = _calculator.calculateLine(
+          grossWeight: line.grossWeight,
+          waterWeight: line.waterWeight,
+          basePrice: basePrice,
+        );
+        await _db.invoiceLineDao.updateLineValues(
+          line.id,
+          InvoiceLinesCompanion(
+            basePrice: Value(basePrice),
+            density: Value(values.density),
+            carat: Value(values.carat),
+            unitPrice: Value(values.unitPrice),
+            amount: Value(values.amount),
+          ),
+        );
+      }
+      await _db.invoiceDao.updateFields(
+        invoiceId,
+        InvoicesCompanion(
+          basePrice: Value(basePrice),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+      await _refreshTotals(invoiceId);
+    });
+  }
+
+  @override
   Future<void> deleteLine({required int lineId, required int invoiceId}) {
     return _db.transaction(() async {
       await _db.invoiceLineDao.deleteById(lineId);

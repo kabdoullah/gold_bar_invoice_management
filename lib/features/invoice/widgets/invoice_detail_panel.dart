@@ -63,7 +63,11 @@ class InvoiceDetailPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _BasePriceDisplay(basePrice: invoice.basePrice),
+          _EditableBasePrice(
+            basePrice: invoice.basePrice,
+            enabled: !vm.isMutating,
+            onCommit: (value) => vm.updateBasePriceOfSelectedInvoice(value),
+          ),
           const SizedBox(height: 12),
           EditableInvoiceTable(
             lines: lines,
@@ -80,37 +84,110 @@ class InvoiceDetailPanel extends StatelessWidget {
   }
 }
 
-/// Read-only base price row — displayed (the operator needs to see the locked
-/// rate) but never editable on an existing invoice.
-class _BasePriceDisplay extends StatelessWidget {
-  const _BasePriceDisplay({required this.basePrice});
+/// Editable base price field with auto-save on blur. Changing it re-prices
+/// every line of the invoice (handled by the VM/repository). On an invalid
+/// value (empty / not a number / <= 0) the field reverts to the stored price.
+class _EditableBasePrice extends StatefulWidget {
+  const _EditableBasePrice({
+    required this.basePrice,
+    required this.onCommit,
+    required this.enabled,
+  });
 
-  final double basePrice;
+  final double                      basePrice;
+  final Future<bool> Function(double basePrice) onCommit;
+  final bool                        enabled;
+
+  @override
+  State<_EditableBasePrice> createState() => _EditableBasePriceState();
+}
+
+class _EditableBasePriceState extends State<_EditableBasePrice> {
+  final _controller = TextEditingController();
+  final _focus      = FocusNode();
+  bool _committing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.text = _editText(widget.basePrice);
+    _focus.addListener(_onFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant _EditableBasePrice oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Refresh from storage only when the operator isn't editing.
+    if (!_focus.hasFocus) _controller.text = _editText(widget.basePrice);
+  }
+
+  void _onFocusChange() {
+    if (_focus.hasFocus) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_focus.hasFocus) _maybeCommit();
+    });
+  }
+
+  Future<void> _maybeCommit() async {
+    if (_committing) return;
+    final value = _parse(_controller.text);
+    if (value == null || value <= 0) {
+      _revert();
+      return;
+    }
+    if (value == widget.basePrice) return;
+    _committing = true;
+    final ok = await widget.onCommit(value);
+    _committing = false;
+    if (!ok && mounted) _revert();
+  }
+
+  void _revert() => _controller.text = _editText(widget.basePrice);
+
+  static double? _parse(String v) =>
+      v.trim().isEmpty ? null : double.tryParse(v.replaceAll(',', '.'));
+
+  static String _editText(double v) => v == v.truncateToDouble()
+      ? v.toInt().toString()
+      : v.toString().replaceAll('.', ',');
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.border, width: 0.5),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text('Prix de base',
-              style: TextStyle(color: colors.textSecondary, fontSize: 13)),
-          Text(
-            NumberFormatter.amount(basePrice),
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+    return TextField(
+      controller: _controller,
+      focusNode: _focus,
+      enabled: widget.enabled,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      textInputAction: TextInputAction.done,
+      onSubmitted: (_) => _focus.unfocus(),
+      style: TextStyle(
+          color: colors.textPrimary, fontSize: 16, fontWeight: FontWeight.w500),
+      decoration: InputDecoration(
+        labelText: 'Prix de base',
+        labelStyle: TextStyle(color: colors.textSecondary),
+        filled: true,
+        fillColor: colors.surface,
+        isDense: true,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: colors.border, width: 0.5),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: colors.border, width: 0.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: colors.accentAction, width: 1),
+        ),
       ),
     );
   }

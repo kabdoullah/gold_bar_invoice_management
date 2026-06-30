@@ -159,6 +159,44 @@ void main() {
     });
   });
 
+  group('updateInvoiceBasePrice', () {
+    test('re-prices every line and updates the header', () async {
+      final id = await createDraft(); // base 70200
+      await repo.addLine(invoiceId: id, grossWeight: 430.87, waterWeight: 23.67);
+      await repo.addLine(invoiceId: id, grossWeight: 126.39, waterWeight: 6.87);
+      await repo.finalizeInvoice(id);
+
+      await repo.updateInvoiceBasePrice(invoiceId: id, basePrice: 71000);
+
+      final calc = GoldBarCalculatorService();
+      final expected1 = calc.calculateLine(
+          grossWeight: 430.87, waterWeight: 23.67, basePrice: 71000);
+
+      final invoice = await repo.getInvoice(id);
+      expect(invoice!.basePrice, 71000);
+      expect(invoice.barCount, 2); // count unchanged
+
+      final lines = await repo.getLines(id);
+      expect(lines.every((l) => l.basePrice == 71000), isTrue);
+      final l1 = lines.firstWhere((l) => l.barNumber == 1);
+      expect(l1.amount, closeTo(expected1.amount, 0.001)); // re-priced
+      expect(l1.carat, closeTo(expected1.carat, 0.0001)); // base-independent
+
+      final sum = lines.fold(0.0, (s, l) => s + l.amount);
+      expect(invoice.totalAmount, closeTo(sum, 0.01));
+    });
+
+    test('rejects a non-positive base price', () async {
+      final id = await createDraft();
+      await repo.addLine(invoiceId: id, grossWeight: 430.87, waterWeight: 23.67);
+      await repo.finalizeInvoice(id);
+      expect(
+        repo.updateInvoiceBasePrice(invoiceId: id, basePrice: 0),
+        throwsA(isA<InvalidBasePriceException>()),
+      );
+    });
+  });
+
   group('updateDraftHeader', () {
     test('rejects basePrice change once lines exist', () async {
       final id = await createDraft();
